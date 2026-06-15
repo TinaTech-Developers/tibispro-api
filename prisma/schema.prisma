@@ -1,0 +1,294 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  email       String?
+  phone       String?
+  industry    String?
+  currency    String?
+  address     String?
+  city        String?
+  country     String?
+  logoUrl     String?
+
+  plan        Plan      @default(FREE)
+  status      OrgStatus @default(ACTIVE)
+
+  isSetupComplete Boolean @default(false)
+
+  trialEndsAt DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User?
+
+  customers   Customer[]
+  products    Product[]
+  invoices    Invoice[]
+  expenses    Expense[]
+  payments    Payment[]
+  subscriptions Subscription[]
+  quotations  Quotation[]
+  files       File[]
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+
+  role          Role     @default(ADMIN)
+
+  organizationId String   @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt     DateTime @default(now())
+}
+
+
+
+model Subscription {
+  id              String   @id @default(uuid())
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  plan            Plan     @default(PRO)
+  status          SubscriptionStatus @default(TRIAL)
+
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  trialEndsAt     DateTime?
+
+  autoRenew       Boolean  @default(true)
+
+  createdAt       DateTime @default(now())
+}
+
+model Customer {
+  id             String   @id @default(uuid())
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  invoices       Invoice[]
+  quotations     Quotation[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Product {
+  id             String   @id @default(uuid())
+  name           String
+  price          Float
+  stock          Int      @default(0)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  invoiceItems   InvoiceItem[]
+  quotationItems QuotationItem[]
+
+  stockMovements StockMovement[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model StockMovement {
+  id             String   @id @default(uuid())
+
+  productId      String
+  product        Product @relation(fields: [productId], references: [id])
+
+  organizationId String
+
+  type           StockMovementType
+  quantity       Int
+
+  reason         String? // sale, purchase, adjustment
+
+  createdAt      DateTime @default(now())
+}
+
+model Quotation {
+  id             String   @id @default(uuid())
+
+  quotationNumber String   @unique
+
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  status         QuotationStatus @default(DRAFT)
+
+  total          Float @default(0)
+
+  items          QuotationItem[]
+
+  validUntil     DateTime?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model QuotationItem {
+  id            String   @id @default(uuid())
+
+  quotationId   String
+  quotation     Quotation @relation(fields: [quotationId], references: [id])
+
+  productId     String
+  product       Product @relation(fields: [productId], references: [id])
+
+  quantity      Int
+  price         Float
+  total         Float
+}
+
+model Invoice {
+  id             String   @id @default(uuid())
+
+  invoiceNumber  String @unique
+
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  status         InvoiceStatus @default(PENDING)
+  total          Float @default(0)
+
+  items          InvoiceItem[]
+  payments       Payment[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model InvoiceItem {
+  id         String  @id @default(uuid())
+
+  invoiceId  String
+  invoice    Invoice @relation(fields: [invoiceId], references: [id])
+
+  productId  String
+  product    Product @relation(fields: [productId], references: [id])
+
+  quantity   Int
+  price      Float
+  total      Float
+}
+model Expense {
+  id             String   @id @default(uuid())
+  title          String
+  amount         Float
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Payment {
+  id             String   @id @default(uuid())
+
+  amount         Float
+  method         PaymentMethod
+  status         PaymentStatus @default(PENDING)
+
+  reference      String?
+
+  invoiceId      String?
+  invoice        Invoice? @relation(fields: [invoiceId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model File {
+  id             String   @id @default(uuid())
+  url            String
+  type           String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt      DateTime @default(now())
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+enum OrgStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum PaymentMethod {
+  ECOCASH
+  CASH
+  CARD
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
