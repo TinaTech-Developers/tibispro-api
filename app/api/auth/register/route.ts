@@ -43,7 +43,15 @@ export async function POST(req: Request) {
       },
     });
   } catch (err) {
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("REGISTER ERROR:", err);
+
+    return NextResponse.json(
+      {
+        error: "Server error",
+        details: err instanceof Error ? err.message : String(err),
+      },
+      { status: 500 },
+    );
   }
 }
 
