@@ -30,12 +30,13 @@ export async function POST(req: Request) {
 
     const token = signToken({
       userId: user.id,
-      orgId: user.organizationId,
+      orgId: user.organization?.id ?? null, // ✅ FIX HERE
     });
 
     return NextResponse.json({
       token,
       user,
+      needsOrgSetup: !user.organization, // 🔥 useful for onboarding flow
     });
   } catch (err) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
