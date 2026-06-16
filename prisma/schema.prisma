@@ -8,42 +8,48 @@ datasource db {
 }
 
 model Organization {
-  id              String         @id @default(uuid())
-  name            String
-  email           String?
-  phone           String?
-  industry        String?
-  currency        String?
-  address         String?
-  city            String?
-  country         String?
-  logoUrl         String?
-  plan            Plan           @default(FREE)
-  status          OrgStatus      @default(ACTIVE)
-  isSetupComplete Boolean        @default(false)
-  trialEndsAt     DateTime?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  userId          String?        @unique
-  customers       Customer[]
-  expenses        Expense[]
-  files           File[]
-  invoices        Invoice[]
-  user            User?          @relation(fields: [userId], references: [id])
-  payments        Payment[]
-  products        Product[]
-  quotations      Quotation[]
-  subscriptions   Subscription[]
+  id       String  @id @default(uuid())
+  name     String
+  email    String?
+  phone    String?
+  industry String?
+  currency String?
+  address  String?
+  city     String?
+  country  String?
+  logoUrl  String?
+
+  plan            Plan      @default(FREE)
+  status          OrgStatus @default(ACTIVE)
+  isSetupComplete Boolean   @default(false)
+
+  user User?
+
+  trialEndsAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  customers     Customer[]
+  expenses      Expense[]
+  files         File[]
+  invoices      Invoice[]
+  payments      Payment[]
+  products      Product[]
+  quotations    Quotation[]
+  subscriptions Subscription[]
 }
 
 model User {
-  id           String        @id @default(uuid())
+  id           String @id @default(uuid())
   name         String
-  email        String        @unique
+  email        String @unique
   passwordHash String
-  role         Role          @default(ADMIN)
-  createdAt    DateTime      @default(now())
-  organization Organization?
+
+  organizationId String?       @unique
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  role      Role     @default(ADMIN)
+  createdAt DateTime @default(now())
 }
 
 model Subscription {
