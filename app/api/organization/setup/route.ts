@@ -52,6 +52,9 @@ export async function POST(req: Request) {
       },
     });
 
+    console.log("TOKEN HEADER:", auth);
+    console.log("DECODED:", decoded);
+    console.log("BODY:", req.json());
     return NextResponse.json({
       message: "Organization created",
       organization,

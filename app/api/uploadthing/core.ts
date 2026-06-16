@@ -1,3 +1,4 @@
+// api/uploadthing/core.ts
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 
 const f = createUploadthing();
@@ -10,12 +11,10 @@ export const ourFileRouter = {
     },
   })
     .middleware(async ({ req }) => {
-      // You can verify JWT here later if needed
+      // later: verify JWT here
       return { userId: "temp-user" };
     })
-    .onUploadComplete(async ({ metadata, file }) => {
-      console.log("Uploaded file:", file.url);
-
+    .onUploadComplete(async ({ file }) => {
       return { url: file.url };
     }),
 } satisfies FileRouter;

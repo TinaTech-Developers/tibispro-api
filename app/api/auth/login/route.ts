@@ -37,6 +37,8 @@ export async function POST(req: Request) {
       );
     }
 
+    const hasOrganization = !!user.organization;
+
     const token = signToken({
       userId: user.id,
       orgId: user.organization?.id ?? null,
@@ -44,7 +46,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       token,
-      needsOrgSetup: !user.organization,
+
+      // ✅ SIMPLE AND RELIABLE FOR FRONTEND ROUTING
+      hasOrganization,
 
       user: {
         id: user.id,
