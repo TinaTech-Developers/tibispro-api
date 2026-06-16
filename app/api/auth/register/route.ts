@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { signToken } from "@/lib/jwt";
 
 export async function POST(req: Request) {
   try {
@@ -34,8 +35,15 @@ export async function POST(req: Request) {
       },
     });
 
+    // ✅ CREATE TOKEN (IMPORTANT FIX)
+    const token = signToken({
+      userId: user.id,
+      orgId: null, // no organization yet
+    });
+
     return NextResponse.json({
       message: "Account created",
+      token, // ✅ THIS FIXES YOUR FRONTEND LOGIC
       user: {
         id: user.id,
         name: user.name,
