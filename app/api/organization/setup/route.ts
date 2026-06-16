@@ -6,7 +6,12 @@ export async function POST(req: Request) {
   try {
     const auth = req.headers.get("authorization");
     const token = auth?.split(" ")[1];
-    const decoded: any = verifyToken(token!);
+
+    if (!token) {
+      return NextResponse.json({ error: "No token" }, { status: 401 });
+    }
+
+    const decoded: any = verifyToken(token);
 
     const {
       organizationName,
@@ -25,6 +30,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // 1. Create organization
     const organization = await prisma.organization.create({
       data: {
         name: organizationName,
@@ -35,12 +41,16 @@ export async function POST(req: Request) {
         address,
         city,
         isSetupComplete: true,
+      },
+    });
 
-        user: {
-          connect: {
-            id: decoded.userId,
-          },
-        },
+    // 2. Attach to user
+    await prisma.user.update({
+      where: {
+        id: decoded.userId,
+      },
+      data: {
+        organizationId: organization.id,
       },
     });
 
@@ -48,9 +58,12 @@ export async function POST(req: Request) {
       message: "Organization created",
       organization,
     });
-  } catch (err) {
+  } catch (err: any) {
     return NextResponse.json(
-      { error: "Failed to setup organization" },
+      {
+        error: "Failed to setup organization",
+        details: err.message,
+      },
       { status: 500 },
     );
   }
