@@ -8,235 +8,179 @@ datasource db {
 }
 
 model Organization {
-  id          String   @id @default(uuid())
-  name        String
-  email       String?
-  phone       String?
-  industry    String?
-  currency    String?
-  address     String?
-  city        String?
-  country     String?
-  logoUrl     String?
-
-  plan        Plan      @default(FREE)
-  status      OrgStatus @default(ACTIVE)
-
-  isSetupComplete Boolean @default(false)
-
-  trialEndsAt DateTime?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user        User?
-
-  customers   Customer[]
-  products    Product[]
-  invoices    Invoice[]
-  expenses    Expense[]
-  payments    Payment[]
-  subscriptions Subscription[]
-  quotations  Quotation[]
-  files       File[]
+  id              String         @id @default(uuid())
+  name            String
+  email           String?
+  phone           String?
+  industry        String?
+  currency        String?
+  address         String?
+  city            String?
+  country         String?
+  logoUrl         String?
+  plan            Plan           @default(FREE)
+  status          OrgStatus      @default(ACTIVE)
+  isSetupComplete Boolean        @default(false)
+  trialEndsAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  userId          String?        @unique
+  customers       Customer[]
+  expenses        Expense[]
+  files           File[]
+  invoices        Invoice[]
+  user            User?          @relation(fields: [userId], references: [id])
+  payments        Payment[]
+  products        Product[]
+  quotations      Quotation[]
+  subscriptions   Subscription[]
 }
 
 model User {
-  id            String   @id @default(uuid())
-  name          String
-  email         String   @unique
-  passwordHash  String
-
-  role          Role     @default(ADMIN)
-
-  organizationId String?   @unique
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-
-  createdAt     DateTime @default(now())
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         Role          @default(ADMIN)
+  createdAt    DateTime      @default(now())
+  organization Organization?
 }
 
-
-
 model Subscription {
-  id              String   @id @default(uuid())
-
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id])
-
-  plan            Plan     @default(PRO)
-  status          SubscriptionStatus @default(TRIAL)
-
-  startDate       DateTime @default(now())
-  endDate         DateTime?
-  trialEndsAt     DateTime?
-
-  autoRenew       Boolean  @default(true)
-
-  createdAt       DateTime @default(now())
+  id             String             @id @default(uuid())
+  organizationId String
+  plan           Plan               @default(PRO)
+  status         SubscriptionStatus @default(TRIAL)
+  startDate      DateTime           @default(now())
+  endDate        DateTime?
+  trialEndsAt    DateTime?
+  autoRenew      Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  organization   Organization       @relation(fields: [organizationId], references: [id])
 }
 
 model Customer {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   name           String
   email          String?
   phone          String?
   address        String?
-
   organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id])
-
   invoices       Invoice[]
   quotations     Quotation[]
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
 }
 
 model Product {
-  id             String   @id @default(uuid())
+  id             String          @id @default(uuid())
   name           String
   price          Float
-  stock          Int      @default(0)
-
+  stock          Int             @default(0)
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   invoiceItems   InvoiceItem[]
+  organization   Organization    @relation(fields: [organizationId], references: [id])
   quotationItems QuotationItem[]
-
   stockMovements StockMovement[]
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
 }
 
 model StockMovement {
-  id             String   @id @default(uuid())
-
+  id             String            @id @default(uuid())
   productId      String
-  product        Product @relation(fields: [productId], references: [id])
-
   organizationId String
-
   type           StockMovementType
   quantity       Int
-
-  reason         String? // sale, purchase, adjustment
-
-  createdAt      DateTime @default(now())
+  reason         String?
+  createdAt      DateTime          @default(now())
+  product        Product           @relation(fields: [productId], references: [id])
 }
 
 model Quotation {
-  id             String   @id @default(uuid())
-
-  quotationNumber String   @unique
-
-  customerId     String
-  customer       Customer @relation(fields: [customerId], references: [id])
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  status         QuotationStatus @default(DRAFT)
-
-  total          Float @default(0)
-
-  items          QuotationItem[]
-
-  validUntil     DateTime?
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String          @id @default(uuid())
+  quotationNumber String          @unique
+  customerId      String
+  organizationId  String
+  status          QuotationStatus @default(DRAFT)
+  total           Float           @default(0)
+  validUntil      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  customer        Customer        @relation(fields: [customerId], references: [id])
+  organization    Organization    @relation(fields: [organizationId], references: [id])
+  items           QuotationItem[]
 }
 
 model QuotationItem {
-  id            String   @id @default(uuid())
-
-  quotationId   String
-  quotation     Quotation @relation(fields: [quotationId], references: [id])
-
-  productId     String
-  product       Product @relation(fields: [productId], references: [id])
-
-  quantity      Int
-  price         Float
-  total         Float
+  id          String    @id @default(uuid())
+  quotationId String
+  productId   String
+  quantity    Int
+  price       Float
+  total       Float
+  product     Product   @relation(fields: [productId], references: [id])
+  quotation   Quotation @relation(fields: [quotationId], references: [id])
 }
 
 model Invoice {
-  id             String   @id @default(uuid())
-
-  invoiceNumber  String @unique
-
+  id             String        @id @default(uuid())
+  invoiceNumber  String        @unique
   customerId     String
-  customer       Customer @relation(fields: [customerId], references: [id])
-
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
   status         InvoiceStatus @default(PENDING)
-  total          Float @default(0)
-
+  total          Float         @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  customer       Customer      @relation(fields: [customerId], references: [id])
+  organization   Organization  @relation(fields: [organizationId], references: [id])
   items          InvoiceItem[]
   payments       Payment[]
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
 }
 
 model InvoiceItem {
-  id         String  @id @default(uuid())
-
-  invoiceId  String
-  invoice    Invoice @relation(fields: [invoiceId], references: [id])
-
-  productId  String
-  product    Product @relation(fields: [productId], references: [id])
-
-  quantity   Int
-  price      Float
-  total      Float
+  id        String  @id @default(uuid())
+  invoiceId String
+  productId String
+  quantity  Int
+  price     Float
+  total     Float
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
 }
+
 model Expense {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   title          String
   amount         Float
-
   organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id])
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
 }
 
 model Payment {
-  id             String   @id @default(uuid())
-
+  id             String        @id @default(uuid())
   amount         Float
   method         PaymentMethod
   status         PaymentStatus @default(PENDING)
-
   reference      String?
-
   invoiceId      String?
-  invoice        Invoice? @relation(fields: [invoiceId], references: [id])
-
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  invoice        Invoice?      @relation(fields: [invoiceId], references: [id])
+  organization   Organization  @relation(fields: [organizationId], references: [id])
 }
 
 model File {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   url            String
   type           String?
-
   organizationId String
+  createdAt      DateTime     @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id])
-
-  createdAt      DateTime @default(now())
 }
 
 enum Role {

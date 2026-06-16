@@ -5,12 +5,12 @@ import { verifyToken } from "@/lib/jwt";
 export async function POST(req: Request) {
   try {
     const auth = req.headers.get("authorization");
-    const token = auth?.split(" ")[1];
 
-    if (!token) {
+    if (!auth) {
       return NextResponse.json({ error: "No token" }, { status: 401 });
     }
 
+    const token = auth.split(" ")[1];
     const decoded: any = verifyToken(token);
 
     const {
@@ -21,6 +21,7 @@ export async function POST(req: Request) {
       phone,
       address,
       city,
+      logoUrl,
     } = await req.json();
 
     if (!organizationName || !currency || !country) {
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Create organization
+    // 🔥 Create organization AND attach user in ONE step (BEST PRACTICE)
     const organization = await prisma.organization.create({
       data: {
         name: organizationName,
@@ -40,17 +41,14 @@ export async function POST(req: Request) {
         phone,
         address,
         city,
+        logoUrl,
         isSetupComplete: true,
-      },
-    });
 
-    // 2. Attach to user
-    await prisma.user.update({
-      where: {
-        id: decoded.userId,
-      },
-      data: {
-        organizationId: organization.id,
+        user: {
+          connect: {
+            id: decoded.userId,
+          },
+        },
       },
     });
 

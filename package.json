@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "@uploadthing/react": "^7.3.3",
     "axios": "^1.17.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
@@ -19,6 +20,7 @@
     "prisma": "^6.19.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "uploadthing": "^7.7.4",
     "zod": "^4.4.3"
   },
   "devDependencies": {
