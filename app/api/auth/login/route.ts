@@ -7,9 +7,18 @@ export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: "Email and password are required" },
+        { status: 400 },
+      );
+    }
+
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { organization: true },
+      include: {
+        organization: true,
+      },
     });
 
     if (!user) {
@@ -19,9 +28,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const valid = await bcrypt.compare(password, user.passwordHash);
+    const validPassword = await bcrypt.compare(password, user.passwordHash);
 
-    if (!valid) {
+    if (!validPassword) {
       return NextResponse.json(
         { error: "Invalid credentials" },
         { status: 401 },
@@ -30,15 +39,38 @@ export async function POST(req: Request) {
 
     const token = signToken({
       userId: user.id,
-      orgId: user.organization?.id ?? null, // ✅ FIX HERE
+      orgId: user.organization?.id ?? null,
     });
 
     return NextResponse.json({
       token,
-      user,
-      needsOrgSetup: !user.organization, // 🔥 useful for onboarding flow
+      needsOrgSetup: !user.organization,
+
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+
+        organization:
+          user.organization ?
+            {
+              id: user.organization.id,
+              name: user.organization.name,
+              isSetupComplete: user.organization.isSetupComplete,
+            }
+          : null,
+      },
     });
   } catch (err) {
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("LOGIN ERROR:", err);
+
+    return NextResponse.json(
+      {
+        error: "Server error",
+        details: err instanceof Error ? err.message : String(err),
+      },
+      { status: 500 },
+    );
   }
 }
