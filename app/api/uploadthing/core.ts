@@ -27,7 +27,7 @@ export const ourFileRouter = {
       console.log("File URL:", file.ufsUrl);
 
       return {
-        url: file.ufsUrl,
+        url: file.url,
       };
     }),
 } satisfies FileRouter;
