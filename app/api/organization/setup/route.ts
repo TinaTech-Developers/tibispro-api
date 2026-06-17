@@ -16,6 +16,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       organizationName,
+      email,
       currency,
       country,
       industry,
@@ -53,11 +54,12 @@ export async function POST(req: Request) {
     // 🧠 TRIAL SYSTEM (14 DAYS)
     const now = new Date();
     const trialEndsAt = new Date();
-    trialEndsAt.setDate(now.getDate() + 14);
+    trialEndsAt.setTime(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
     const organization = await prisma.organization.create({
       data: {
         name: organizationName,
+        email, // default to user's email
         currency,
         country,
         industry,
