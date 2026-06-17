@@ -10,16 +10,15 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 👤 Get user
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
         name: true,
         email: true,
-        phone: true,
+        role: true,
         organizationId: true,
-        createdAt: true,
+        organization: true, // 👈 IMPORTANT (relation)
       },
     });
 
@@ -27,43 +26,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // 🏢 Get organization (if exists)
-    let organization = null;
-
-    if (orgId) {
-      organization = await prisma.organization.findUnique({
-        where: { id: orgId },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-          industry: true,
-          currency: true,
-          country: true,
-          city: true,
-          logoUrl: true,
-          plan: true,
-          status: true,
-          isSetupComplete: true,
-          trialEndsAt: true,
-        },
-      });
-    }
-
     return NextResponse.json({
       user,
-      organization,
+      organization: user.organization,
     });
-  } catch (err: any) {
-    console.error("ME API ERROR:", err);
-
-    return NextResponse.json(
-      {
-        error: "Failed to load user profile",
-        details: err?.message ?? "Unknown error",
-      },
-      { status: 500 },
-    );
+  } catch (err) {
+    return NextResponse.json({ error: "Failed to load user" }, { status: 500 });
   }
 }
