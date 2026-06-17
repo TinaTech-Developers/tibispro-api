@@ -24,6 +24,7 @@ export async function POST(req: Request) {
       address,
       city,
       logoUrl,
+      
     } = body;
 
     if (!organizationName || !currency || !country) {
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
     const organization = await prisma.organization.create({
       data: {
         name: organizationName,
-        email, // default to user's email
+        email,
         currency,
         country,
         industry,
