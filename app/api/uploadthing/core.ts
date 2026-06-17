@@ -1,7 +1,12 @@
-// api/uploadthing/core.ts
 import { createUploadthing, type FileRouter } from "uploadthing/next";
+import { UploadThingError } from "uploadthing/server";
 
 const f = createUploadthing();
+
+// fake auth (replace with JWT later)
+const auth = async (req: Request) => {
+  return { id: "user-id" };
+};
 
 export const ourFileRouter = {
   imageUploader: f({
@@ -11,11 +16,19 @@ export const ourFileRouter = {
     },
   })
     .middleware(async ({ req }) => {
-      // later: verify JWT here
-      return { userId: "temp-user" };
+      const user = await auth(req);
+
+      if (!user) throw new UploadThingError("Unauthorized");
+
+      return { userId: user.id };
     })
-    .onUploadComplete(async ({ file }) => {
-      return { url: file.url };
+    .onUploadComplete(async ({ file, metadata }) => {
+      console.log("Uploaded by:", metadata.userId);
+      console.log("File URL:", file.ufsUrl);
+
+      return {
+        url: file.ufsUrl,
+      };
     }),
 } satisfies FileRouter;
 

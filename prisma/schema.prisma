@@ -23,11 +23,12 @@ model Organization {
   status          OrgStatus @default(ACTIVE)
   isSetupComplete Boolean   @default(false)
 
-  user User?
-
   trialEndsAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
 
   customers     Customer[]
   expenses      Expense[]
@@ -37,6 +38,8 @@ model Organization {
   products      Product[]
   quotations    Quotation[]
   subscriptions Subscription[]
+
+  subscriptionPayments SubscriptionPayment[]
 }
 
 model User {
@@ -45,24 +48,66 @@ model User {
   email        String @unique
   passwordHash String
 
-  organizationId String?       @unique
+  organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
 
-  role      Role     @default(ADMIN)
+  role Role @default(ADMIN)
+
   createdAt DateTime @default(now())
 }
 
 model Subscription {
-  id             String             @id @default(uuid())
+  id String @id @default(uuid())
+
   organizationId String
-  plan           Plan               @default(PRO)
-  status         SubscriptionStatus @default(TRIAL)
-  startDate      DateTime           @default(now())
-  endDate        DateTime?
-  trialEndsAt    DateTime?
-  autoRenew      Boolean            @default(true)
-  createdAt      DateTime           @default(now())
-  organization   Organization       @relation(fields: [organizationId], references: [id])
+
+  plan Plan @default(PRO)
+
+  status SubscriptionStatus @default(TRIAL)
+
+  startDate DateTime @default(now())
+
+  endDate DateTime?
+
+  trialEndsAt DateTime?
+
+  amount Float? @default(5)
+
+  paymentReference String?
+
+  autoRenew Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+}
+
+model BillingConfig {
+  id String @id @default(uuid())
+
+  monthlyPriceUsd Float @default(5)
+
+  trialDays Int @default(14)
+
+  createdAt DateTime @default(now())
+}
+
+model SubscriptionPayment {
+  id String @id @default(uuid())
+
+  organizationId String
+
+  amount Float
+
+  phoneNumber String
+
+  reference String?
+
+  status PaymentStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
 }
 
 model Customer {
