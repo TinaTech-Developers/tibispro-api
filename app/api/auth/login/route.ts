@@ -17,7 +17,11 @@ export async function POST(req: Request) {
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
-        organization: true,
+        organization: {
+          include: {
+            subscriptions: true,
+          },
+        },
       },
     });
 
@@ -27,6 +31,20 @@ export async function POST(req: Request) {
         { status: 401 },
       );
     }
+
+    const organization = user.organization;
+
+    const subscription = organization?.subscriptions?.[0] ?? null;
+
+    const isTrialActive =
+      subscription?.status === "TRIAL" &&
+      organization?.trialEndsAt &&
+      new Date(organization.trialEndsAt) > new Date();
+
+    const needsSetup = !organization?.isSetupComplete;
+
+    const needsSubscription =
+      organization && !isTrialActive && subscription?.status !== "ACTIVE";
 
     const validPassword = await bcrypt.compare(password, user.passwordHash);
 
@@ -47,21 +65,25 @@ export async function POST(req: Request) {
     return NextResponse.json({
       token,
 
-      // ✅ SIMPLE AND RELIABLE FOR FRONTEND ROUTING
-      hasOrganization,
+      hasOrganization: !!organization,
+
+      routeState: {
+        needsSetup,
+        needsSubscription,
+        isTrialActive,
+      },
 
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
-
         organization:
-          user.organization ?
+          organization ?
             {
-              id: user.organization.id,
-              name: user.organization.name,
-              isSetupComplete: user.organization.isSetupComplete,
+              id: organization.id,
+              name: organization.name,
+              isSetupComplete: organization.isSetupComplete,
             }
           : null,
       },

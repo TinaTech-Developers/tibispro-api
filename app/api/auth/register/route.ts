@@ -43,7 +43,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       message: "Account created",
-      token, // ✅ THIS FIXES YOUR FRONTEND LOGIC
+      token,
+      routeState: {
+        hasOrganization: false,
+        needsSetup: true,
+        needsSubscription: false,
+      },
       user: {
         id: user.id,
         name: user.name,

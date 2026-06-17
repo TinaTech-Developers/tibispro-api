@@ -100,6 +100,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       message: "Organization created successfully",
+
+      routeState: {
+        needsSetup: false,
+        needsSubscription: false,
+        isTrialActive: true,
+      },
+
       organization,
       trialEndsAt,
       trialDays: 14,
