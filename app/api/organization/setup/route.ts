@@ -14,6 +14,9 @@ export async function POST(req: Request) {
     const decoded: any = verifyToken(token);
 
     const body = await req.json();
+
+    console.log("BODY:", body);
+
     const {
       organizationName,
       email,
@@ -24,9 +27,9 @@ export async function POST(req: Request) {
       address,
       city,
       logoUrl,
-      
     } = body;
 
+    console.log("EMAIL:", email);
     if (!organizationName || !currency || !country) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -54,8 +57,11 @@ export async function POST(req: Request) {
 
     // 🧠 TRIAL SYSTEM (14 DAYS)
     const now = new Date();
+
     const trialEndsAt = new Date();
     trialEndsAt.setTime(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
+    console.log("TRIAL ENDS:", trialEndsAt);
 
     const organization = await prisma.organization.create({
       data: {
@@ -94,6 +100,9 @@ export async function POST(req: Request) {
         subscriptions: true,
       },
     });
+
+    console.log("CREATED ORG:", organization);
+    console.log("SAVED TRIAL:", organization.trialEndsAt);
 
     // optional: update user FK (safe redundancy)
     await prisma.user.update({
