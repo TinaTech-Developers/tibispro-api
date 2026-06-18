@@ -25,20 +25,31 @@ export async function POST(req: Request) {
     }
 
     let total = 0;
+
     const formattedItems = items.map((item: any) => {
-      const qty = Number(item.qty);
-      const price = Number(item.price);
+      const qty = parseFloat(item.qty);
+      const price = parseFloat(item.price);
+
+      if (isNaN(qty) || isNaN(price)) {
+        throw new Error(
+          `Invalid item values: qty=${item.qty}, price=${item.price}`,
+        );
+      }
 
       const itemTotal = qty * price;
       total += itemTotal;
 
       return {
         name: item.name,
-        quantity: qty, // ✅ FIX HERE
+        quantity: qty,
         price,
         productId: item.productId || null,
       };
     });
+
+    if (isNaN(total)) {
+      throw new Error("Total calculation failed (NaN detected)");
+    }
 
     const quotation = await prisma.quotation.create({
       data: {
