@@ -79,15 +79,6 @@ export async function POST(req: Request) {
         status: "ACTIVE",
         isSetupComplete: true,
         trialEndsAt,
-
-        subscriptions: {
-          create: {
-            plan: "PRO",
-            status: "TRIAL",
-            startDate: now,
-            trialEndsAt,
-          },
-        },
       },
       include: {
         users: true,
