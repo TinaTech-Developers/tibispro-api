@@ -17,11 +17,7 @@ export async function POST(req: Request) {
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
-        organization: {
-          include: {
-            subscriptions: true,
-          },
-        },
+        organization: true, // ✅ FIX: removed subscriptions
       },
     });
 
@@ -32,20 +28,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const organization = user.organization;
-
-    const subscription = organization?.subscriptions?.[0] ?? null;
-
-    const isTrialActive =
-      subscription?.status === "TRIAL" &&
-      organization?.trialEndsAt &&
-      new Date(organization.trialEndsAt) > new Date();
-
-    const needsSetup = !organization?.isSetupComplete;
-
-    const needsSubscription =
-      organization && !isTrialActive && subscription?.status !== "ACTIVE";
-
     const validPassword = await bcrypt.compare(password, user.passwordHash);
 
     if (!validPassword) {
@@ -55,11 +37,22 @@ export async function POST(req: Request) {
       );
     }
 
-    const hasOrganization = !!user.organization;
+    const organization = user.organization;
+
+    // 🧠 TRIAL LOGIC (based on your schema)
+    const isTrialActive =
+      !!organization?.trialEndsAt &&
+      new Date(organization.trialEndsAt) > new Date();
+
+    const needsSetup = !organization?.isSetupComplete;
+
+    // 💡 Subscription logic now depends on PLAN ONLY
+    const needsSubscription =
+      organization && !isTrialActive && organization.plan !== "PRO";
 
     const token = signToken({
       userId: user.id,
-      orgId: user.organization?.id ?? null,
+      orgId: organization?.id ?? null,
     });
 
     return NextResponse.json({
@@ -84,6 +77,8 @@ export async function POST(req: Request) {
               id: organization.id,
               name: organization.name,
               isSetupComplete: organization.isSetupComplete,
+              plan: organization.plan,
+              trialEndsAt: organization.trialEndsAt,
             }
           : null,
       },
