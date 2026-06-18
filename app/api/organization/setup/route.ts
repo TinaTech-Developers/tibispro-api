@@ -82,7 +82,6 @@ export async function POST(req: Request) {
       },
       include: {
         users: true,
-        subscriptions: true,
       },
     });
     console.log("CREATED ORG:", organization);
