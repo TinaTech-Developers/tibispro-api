@@ -47,14 +47,55 @@ export async function DELETE(
 
     const { id } = await params;
 
-    await prisma.customer.delete({
-      where: { id, organizationId: orgId },
+    await prisma.customer.deleteMany({
+      where: {
+        id,
+        organizationId: orgId,
+      },
     });
 
     return NextResponse.json({ message: "Customer deleted" });
   } catch (err) {
     return NextResponse.json(
       { error: "Failed to delete customer" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { orgId } = getAuth(req);
+
+    const { id } = await params;
+    const body = await req.json();
+
+    const updated = await prisma.customer.updateMany({
+      where: {
+        id,
+        organizationId: orgId,
+      },
+      data: {
+        name: body.name,
+        phone: body.phone,
+        email: body.email,
+        address: body.address,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: updated,
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: err.message || "Failed to update customer",
+      },
       { status: 500 },
     );
   }
