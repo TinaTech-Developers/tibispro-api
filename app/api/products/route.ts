@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const token = auth?.split(" ")[1];
     const decoded: any = verifyToken(token!);
 
-    const { name, price, stock } = await req.json();
+    const { name, price, stock, cost, type } = await req.json();
 
     if (!name || price == null) {
       return NextResponse.json(
@@ -23,6 +23,8 @@ export async function POST(req: Request) {
         name,
         price,
         stock: stock ?? 0,
+        cost: cost ?? 0,
+        type: type ?? "Product",
         organizationId: decoded.orgId,
       },
     });

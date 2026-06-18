@@ -17,7 +17,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ organization });
   } catch (err) {
     return NextResponse.json(
-      { error: "Failed to fetch organization" },
+      {
+        error: "Failed to load organization",
+      },
       { status: 500 },
     );
   }
