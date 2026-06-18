@@ -25,17 +25,16 @@ export async function POST(req: Request) {
     }
 
     let total = 0;
-
     const formattedItems = items.map((item: any) => {
-      const qty = Number(item.qty || 0);
-      const price = Number(item.price || 0);
+      const qty = Number(item.qty);
+      const price = Number(item.price);
 
       const itemTotal = qty * price;
       total += itemTotal;
 
       return {
         name: item.name,
-        qty,
+        quantity: qty, // ✅ FIX HERE
         price,
         productId: item.productId || null,
       };
