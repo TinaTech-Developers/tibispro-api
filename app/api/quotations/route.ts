@@ -65,7 +65,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ quotation });
   } catch (err: any) {
-    console.error("QUOTATION ERROR:", err);
+    console.error("QUOTATION ERROR FULL:", err); // 👈 IMPORTANT
+    console.error("DETAILS:", err?.message);
+    console.error("META:", err?.meta);
 
     return NextResponse.json(
       { error: "Failed to create quotation" },
