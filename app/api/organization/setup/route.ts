@@ -80,12 +80,6 @@ export async function POST(req: Request) {
         isSetupComplete: true,
         trialEndsAt,
 
-        // connect user
-        users: {
-          connect: { id: user.id },
-        },
-
-        // create subscription record
         subscriptions: {
           create: {
             plan: "PRO",
@@ -100,7 +94,6 @@ export async function POST(req: Request) {
         subscriptions: true,
       },
     });
-
     console.log("CREATED ORG:", organization);
     console.log("SAVED TRIAL:", organization.trialEndsAt);
 
