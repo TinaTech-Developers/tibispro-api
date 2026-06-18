@@ -8,8 +8,12 @@ export async function GET(req: Request) {
 
     const org = await prisma.organization.findUnique({
       where: { id: orgId },
-      include: {
-        subscriptions: true,
+      select: {
+        id: true,
+        name: true,
+        plan: true,
+        trialEndsAt: true,
+        status: true,
       },
     });
 
@@ -19,18 +23,16 @@ export async function GET(req: Request) {
 
     const now = new Date();
 
+    // trial logic (Option A)
     const trialActive = org.trialEndsAt && new Date(org.trialEndsAt) > now;
 
-    const activeSubscription = org.subscriptions.find(
-      (s) => s.status === "ACTIVE",
-    );
-
-    const isActive = Boolean(trialActive || activeSubscription);
+    // subscription = plan-based only (NO table)
+    const isActive = trialActive || org.plan === "PRO";
 
     return NextResponse.json({
       isActive,
       trialEndsAt: org.trialEndsAt,
-      hasActiveSubscription: !!activeSubscription,
+      hasActiveSubscription: org.plan === "PRO",
       plan: org.plan,
     });
   } catch (err) {
