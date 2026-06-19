@@ -95,43 +95,66 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
-    const auth = req.headers.get("authorization");
-    const token = auth?.split(" ")[1];
-
-    if (!token) {
+    const token = req.headers.get("authorization")?.split(" ")[1];
+    if (!token)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const decoded: any = verifyToken(token);
 
     const quotations = await prisma.quotation.findMany({
-      where: {
-        organizationId: decoded.orgId,
-      },
+      where: { organizationId: decoded.orgId },
       include: {
         customer: true,
-        items: {
-          include: {
-            product: true,
-          },
-        },
+        items: true,
       },
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({
-      quotations,
-    });
-  } catch (err: any) {
-    console.error("FETCH QUOTATIONS ERROR:", err);
-
-    return NextResponse.json(
-      {
-        error: "Failed to fetch quotations",
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ quotations });
+  } catch (err) {
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }
+
+// export async function GET(req: Request) {
+//   try {
+//     const auth = req.headers.get("authorization");
+//     const token = auth?.split(" ")[1];
+
+//     if (!token) {
+//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//     }
+
+//     const decoded: any = verifyToken(token);
+
+//     const quotations = await prisma.quotation.findMany({
+//       where: {
+//         organizationId: decoded.orgId,
+//       },
+//       include: {
+//         customer: true,
+//         items: {
+//           include: {
+//             product: true,
+//           },
+//         },
+//       },
+//       orderBy: {
+//         createdAt: "desc",
+//       },
+//     });
+
+//     return NextResponse.json({
+//       quotations,
+//     });
+//   } catch (err: any) {
+//     console.error("FETCH QUOTATIONS ERROR:", err);
+
+//     return NextResponse.json(
+//       {
+//         error: "Failed to fetch quotations",
+//       },
+//       { status: 500 },
+//     );
+//   }
+// }
