@@ -4,34 +4,49 @@ import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/jwt";
 
 export async function GET(
-  req: NextRequest,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const auth = req.headers.get("authorization");
-    const token = auth?.split(" ")[1];
-    const decoded: any = verifyToken(token!);
+    const token = req.headers.get("authorization")?.split(" ")[1];
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const decoded: any = verifyToken(token);
+    const { id } = await params;
 
     const quotation = await prisma.quotation.findFirst({
       where: {
-        id: (await params).id,
+        id,
         organizationId: decoded.orgId,
       },
       include: {
         customer: true,
-        items: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
       },
     });
+
+    if (!quotation) {
+      return NextResponse.json(
+        { error: "Quotation not found" },
+        { status: 404 },
+      );
+    }
 
     return NextResponse.json({ quotation });
   } catch (err) {
     return NextResponse.json(
-      { error: "Failed to fetch quotation" },
+      { error: "Failed to load quotation" },
       { status: 500 },
     );
   }
 }
-
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
