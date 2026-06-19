@@ -90,7 +90,11 @@ export async function GET(req: Request) {
       },
       include: {
         customer: true,
-        items: true,
+        items: {
+          include: {
+            product: true, // 👈 THIS IS WHAT YOU ARE MISSING
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
