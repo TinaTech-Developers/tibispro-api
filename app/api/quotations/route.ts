@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/jwt";
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
@@ -13,43 +13,39 @@ export async function POST(req: Request) {
 
     const decoded: any = verifyToken(token);
 
-    const body = await req.json();
+    const { customerId, items, validUntil, quotationNumber } = await req.json();
 
-    const { customerId, items, validUntil, quotationNumber } = body;
-
-    if (!customerId || !items || items.length === 0) {
+    if (!customerId) {
       return NextResponse.json(
-        { error: "Customer and items are required" },
+        { error: "Customer is required" },
         { status: 400 },
       );
     }
 
-    let total = 0;
+    if (!items || items.length === 0) {
+      return NextResponse.json(
+        { error: "At least one item is required" },
+        { status: 400 },
+      );
+    }
+
+    let quotationTotal = 0;
 
     const formattedItems = items.map((item: any) => {
-      const qty = parseFloat(item.qty);
-      const price = parseFloat(item.price);
+      const quantity = Number(item.qty || item.quantity || 0);
+      const price = Number(item.price || 0);
 
-      if (isNaN(qty) || isNaN(price)) {
-        throw new Error(
-          `Invalid item values: qty=${item.qty}, price=${item.price}`,
-        );
-      }
+      const itemTotal = quantity * price;
 
-      const itemTotal = qty * price;
-      total += itemTotal;
+      quotationTotal += itemTotal;
 
       return {
-        name: item.name,
-        quantity: qty,
+        productId: item.productId,
+        quantity,
         price,
-        productId: item.productId || null,
+        total: itemTotal,
       };
     });
-
-    if (isNaN(total)) {
-      throw new Error("Total calculation failed (NaN detected)");
-    }
 
     const quotation = await prisma.quotation.create({
       data: {
@@ -59,7 +55,7 @@ export async function POST(req: Request) {
         organizationId: decoded.orgId,
 
         status: "DRAFT",
-        total,
+        total: quotationTotal,
 
         validUntil: validUntil ? new Date(validUntil) : null,
 
@@ -67,20 +63,31 @@ export async function POST(req: Request) {
           create: formattedItems,
         },
       },
+
       include: {
-        items: true,
         customer: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
       },
     });
 
-    return NextResponse.json({ quotation });
+    return NextResponse.json(
+      {
+        success: true,
+        quotation,
+      },
+      { status: 201 },
+    );
   } catch (err: any) {
-    console.error("QUOTATION ERROR FULL:", err); // 👈 IMPORTANT
-    console.error("DETAILS:", err?.message);
-    console.error("META:", err?.meta);
+    console.error("QUOTATION ERROR FULL:", err);
 
     return NextResponse.json(
-      { error: "Failed to create quotation" },
+      {
+        error: err.message || "Failed to create quotation",
+      },
       { status: 500 },
     );
   }
@@ -103,19 +110,27 @@ export async function GET(req: Request) {
       },
       include: {
         customer: true,
-        items: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
       },
     });
 
-    return NextResponse.json({ quotations });
-  } catch (err) {
-    console.error("FETCH ERROR:", err);
+    return NextResponse.json({
+      quotations,
+    });
+  } catch (err: any) {
+    console.error("FETCH QUOTATIONS ERROR:", err);
 
     return NextResponse.json(
-      { error: "Failed to fetch quotations" },
+      {
+        error: "Failed to fetch quotations",
+      },
       { status: 500 },
     );
   }
