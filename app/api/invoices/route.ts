@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         total,
         items: {
           create: items.map((item: any) => ({
-            productId: item.productId,
+            productId: item.productId ?? null,
             quantity: item.quantity,
             price: item.price,
             total: item.price * item.quantity,
@@ -47,17 +47,15 @@ export async function POST(req: Request) {
 
     // 🔥 STEP 3: STOCK UPDATE (CRITICAL ERP LOGIC)
     for (const item of items) {
-      // reduce stock
+      if (!item.productId) continue; // skip custom items
+
       await prisma.product.update({
         where: { id: item.productId },
         data: {
-          stock: {
-            decrement: item.quantity,
-          },
+          stock: { decrement: item.quantity },
         },
       });
 
-      // log stock movement
       await prisma.stockMovement.create({
         data: {
           productId: item.productId,
@@ -93,6 +91,9 @@ export async function GET(req: Request) {
         items: {
           include: {
             product: true, // 👈 THIS IS WHAT YOU ARE MISSING
+            payments: true,
+            items: true,
+            customer: true,
           },
         },
       },

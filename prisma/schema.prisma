@@ -8,84 +8,60 @@ datasource db {
 }
 
 model Organization {
-  id       String  @id @default(uuid())
-  name     String
-  email    String?
-  phone    String?
-  industry String?
-  currency String?
-  address  String?
-  city     String?
-  country  String?
-  logoUrl  String?
-
-  plan            Plan      @default(FREE)
-  status          OrgStatus @default(ACTIVE)
-  isSetupComplete Boolean   @default(false)
-
-  trialEndsAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  users User[]
-
-  customers     Customer[]
-  expenses      Expense[]
-  files         File[]
-  invoices      Invoice[]
-  payments      Payment[]
-  products      Product[]
-  quotations    Quotation[]
- 
-
+  id                   String                @id @default(uuid())
+  name                 String
+  email                String?
+  phone                String?
+  industry             String?
+  currency             String?
+  address              String?
+  city                 String?
+  country              String?
+  logoUrl              String?
+  plan                 Plan                  @default(FREE)
+  status               OrgStatus             @default(ACTIVE)
+  isSetupComplete      Boolean               @default(false)
+  trialEndsAt          DateTime?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  customers            Customer[]
+  expenses             Expense[]
+  files                File[]
+  invoices             Invoice[]
+  payments             Payment[]
+  products             Product[]
+  quotations           Quotation[]
   subscriptionPayments SubscriptionPayment[]
+  users                User[]
 }
 
 model User {
-  id           String @id @default(uuid())
-  name         String
-  email        String @unique
-  passwordHash String
-
+  id             String        @id @default(uuid())
+  name           String
+  email          String        @unique
+  passwordHash   String
   organizationId String?
+  role           Role          @default(ADMIN)
+  createdAt      DateTime      @default(now())
   organization   Organization? @relation(fields: [organizationId], references: [id])
-
-  role Role @default(ADMIN)
-
-  createdAt DateTime @default(now())
 }
 
-
-
-
-
 model BillingConfig {
-  id String @id @default(uuid())
-
-  monthlyPriceUsd Float @default(5)
-
-  trialDays Int @default(14)
-
-  createdAt DateTime @default(now())
+  id              String   @id @default(uuid())
+  monthlyPriceUsd Float    @default(5)
+  trialDays       Int      @default(14)
+  createdAt       DateTime @default(now())
 }
 
 model SubscriptionPayment {
-  id String @id @default(uuid())
-
+  id             String        @id @default(uuid())
   organizationId String
-
-  amount Float
-
-  phoneNumber String
-
-  reference String?
-
-  status PaymentStatus @default(PENDING)
-
-  createdAt DateTime @default(now())
-
-  organization Organization @relation(fields: [organizationId], references: [id])
+  amount         Float
+  phoneNumber    String
+  reference      String?
+  status         PaymentStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  organization   Organization  @relation(fields: [organizationId], references: [id])
 }
 
 model Customer {
@@ -108,7 +84,7 @@ model Product {
   price          Float
   cost           Float
   stock          Int             @default(0)
-  type           String   @default("Product")
+  type           String          @default("Product")
   organizationId String
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -117,8 +93,6 @@ model Product {
   quotationItems QuotationItem[]
   stockMovements StockMovement[]
 }
-
-
 
 model StockMovement {
   id             String            @id @default(uuid())
