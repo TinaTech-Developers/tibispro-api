@@ -105,13 +105,18 @@ export async function GET(req: Request) {
       where: { organizationId: decoded.orgId },
       include: {
         customer: true,
-        items: true,
+        items: {
+          include: {
+            product: true, // ✅ FIX ADDED
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json({ quotations });
   } catch (err) {
+    console.error(err);
     return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }
