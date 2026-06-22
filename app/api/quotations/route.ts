@@ -40,7 +40,8 @@ export async function POST(req: Request) {
       quotationTotal += itemTotal;
 
       return {
-        productId: item.productId,
+        productId: item.productId ?? null,
+        name: item.name,
         quantity,
         price,
         total: itemTotal,
