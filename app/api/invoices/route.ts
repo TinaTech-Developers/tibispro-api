@@ -91,12 +91,10 @@ export async function GET(req: Request) {
         customer: true,
         items: {
           include: {
-            product: true, // 👈 THIS IS WHAT YOU ARE MISSING
-            payments: true,
-            items: true,
-            customer: true,
+            product: true,
           },
         },
+        payments: true,
       },
       orderBy: {
         createdAt: "desc",
