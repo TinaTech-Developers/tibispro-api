@@ -78,6 +78,7 @@ export async function DELETE(
 ) {
   try {
     const token = req.headers.get("authorization")?.split(" ")[1];
+
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -86,6 +87,12 @@ export async function DELETE(
 
     const { id } = await params;
 
+    // 🔥 STEP 1: delete children first
+    await prisma.quotationItem.deleteMany({
+      where: { quotationId: id },
+    });
+
+    // 🔥 STEP 2: delete parent
     await prisma.quotation.delete({
       where: { id },
     });
@@ -100,3 +107,32 @@ export async function DELETE(
     );
   }
 }
+
+// export async function DELETE(
+//   req: NextRequest,
+//   { params }: { params: Promise<{ id: string }> },
+// ) {
+//   try {
+//     const token = req.headers.get("authorization")?.split(" ")[1];
+//     if (!token) {
+//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//     }
+
+//     verifyToken(token);
+
+//     const { id } = await params;
+
+//     await prisma.quotation.delete({
+//       where: { id },
+//     });
+
+//     return NextResponse.json({ message: "Quotation deleted" });
+//   } catch (err) {
+//     console.error("DELETE ERROR:", err);
+
+//     return NextResponse.json(
+//       { error: "Failed to delete quotation" },
+//       { status: 500 },
+//     );
+//   }
+// }
