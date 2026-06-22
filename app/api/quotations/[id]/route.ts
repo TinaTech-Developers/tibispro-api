@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/jwt";
 
+/* ================= GET ================= */
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ) {
   try {
     const token = req.headers.get("authorization")?.split(" ")[1];
@@ -15,7 +16,7 @@ export async function GET(
     }
 
     const decoded: any = verifyToken(token);
-    const { id } = await params;
+    const { id } = params;
 
     const quotation = await prisma.quotation.findFirst({
       where: {
@@ -41,26 +42,35 @@ export async function GET(
 
     return NextResponse.json({ quotation });
   } catch (err) {
+    console.error("GET QUOTATION ERROR:", err);
+
     return NextResponse.json(
       { error: "Failed to load quotation" },
       { status: 500 },
     );
   }
 }
+
+/* ================= PATCH ================= */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ) {
   try {
     const auth = req.headers.get("authorization");
     const token = auth?.split(" ")[1];
-    verifyToken(token!);
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    verifyToken(token);
 
     const { status } = await req.json();
 
     const quotation = await prisma.quotation.update({
       where: {
-        id: (await params).id,
+        id: params.id,
       },
       data: {
         status: status as QuotationStatus,
@@ -69,6 +79,8 @@ export async function PATCH(
 
     return NextResponse.json({ quotation });
   } catch (err) {
+    console.error("PATCH QUOTATION ERROR:", err);
+
     return NextResponse.json(
       { error: "Failed to update quotation" },
       { status: 500 },
@@ -76,21 +88,29 @@ export async function PATCH(
   }
 }
 
+/* ================= DELETE ================= */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ) {
   try {
     const auth = req.headers.get("authorization");
     const token = auth?.split(" ")[1];
-    verifyToken(token!);
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    verifyToken(token);
 
     await prisma.quotation.delete({
-      where: { id: (await params).id },
+      where: { id: params.id },
     });
 
     return NextResponse.json({ message: "Quotation deleted" });
   } catch (err) {
+    console.error("DELETE QUOTATION ERROR:", err);
+
     return NextResponse.json(
       { error: "Failed to delete quotation" },
       { status: 500 },
