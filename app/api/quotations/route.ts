@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
       return {
         productId: item.productId ?? null,
-        name: item.name,
+        name: item.productId ? null : item.name,
         quantity,
         price,
         total: itemTotal,
