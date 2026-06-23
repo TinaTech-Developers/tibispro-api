@@ -18,10 +18,13 @@ export async function GET(
       },
       include: {
         customer: true,
-        items: true,
+        items: {
+          include: {
+            product: true, // 👈 ADD THIS
+          },
+        },
       },
     });
-
     return NextResponse.json({ invoice });
   } catch (err) {
     return NextResponse.json(
@@ -81,3 +84,20 @@ export async function DELETE(
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

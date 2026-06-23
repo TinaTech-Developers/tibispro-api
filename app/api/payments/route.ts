@@ -45,25 +45,31 @@ export async function POST(req: Request) {
         amount,
         method,
         reference,
-        status: PaymentStatus.PAID, // ✅ FIXED
+        status: PaymentStatus.PAID,
         organizationId: decoded.orgId,
       },
     });
 
-    // 🧠 AUTO CALCULATE TOTAL PAID
-    if (invoice) {
-      const totalPaid =
-        invoice.payments.reduce((sum, p) => sum + p.amount, 0) + amount;
+    if (invoiceId) {
+      const payments = await prisma.payment.aggregate({
+        where: {
+          invoiceId,
+          status: PaymentStatus.PAID,
+        },
+        _sum: {
+          amount: true,
+        },
+      });
 
-      let status: InvoiceStatus = InvoiceStatus.PENDING;
+      const totalPaid = payments._sum.amount || 0;
 
-      if (totalPaid >= invoice.total) {
-        status = InvoiceStatus.PAID;
-      }
       await prisma.invoice.update({
-        where: { id: invoice.id },
+        where: { id: invoiceId },
         data: {
-          status,
+          status:
+            totalPaid >= invoice!.total ?
+              InvoiceStatus.PAID
+            : InvoiceStatus.PENDING,
         },
       });
     }
