@@ -6,9 +6,9 @@ export async function POST(req: Request) {
   try {
     const { orgId } = getAuth(req);
 
-    const { title, amount } = await req.json();
+    const { title, amount, category, notes } = await req.json();
 
-    if (!title || !amount) {
+    if (!title || !amount || !category || !notes) {
       return NextResponse.json(
         { error: "Title and amount are required" },
         { status: 400 },
@@ -17,8 +17,11 @@ export async function POST(req: Request) {
 
     const expense = await prisma.expense.create({
       data: {
+        expenseNumber: `EXP-${Date.now()}`,
         title,
-        amount,
+        category,
+        notes,
+        amount: Number(amount),
         organizationId: orgId,
       },
     });
