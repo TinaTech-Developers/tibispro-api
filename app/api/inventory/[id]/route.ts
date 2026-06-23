@@ -1,38 +1,37 @@
-import { verifyToken } from "@/lib/jwt";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { verifyToken } from "@/lib/jwt";
 
-export function GET(req: Request, { params }: { params: { id: string } }) {
-  return new Promise(async (resolve) => {
-    try {
-      const auth = req.headers.get("authorization");
-      const token = auth?.split(" ")[1];
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) {
+  try {
+    const auth = req.headers.get("authorization");
 
-      if (!token) {
-        return resolve(
-          NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-        );
-      }
-
-      const decoded = verifyToken(token) as any;
-
-      const product = await prisma.product.findFirst({
-        where: {
-          id: params.id,
-          organizationId: decoded.organizationId,
-        },
-      });
-
-      return resolve(NextResponse.json({ product }));
-    } catch (err) {
-      console.log("GET PRODUCT ERROR:", err);
-
-      return resolve(
-        NextResponse.json(
-          { error: "Failed to fetch product" },
-          { status: 500 },
-        ),
-      );
+    if (!auth) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-  });
+
+    const token = auth.split(" ")[1];
+    const decoded = verifyToken(token) as any;
+
+    const { id } = await context.params;
+
+    const product = await prisma.product.findFirst({
+      where: {
+        id,
+        organizationId: decoded.organizationId,
+      },
+    });
+
+    return NextResponse.json({ product });
+  } catch (err) {
+    console.log("PRODUCT GET ERROR:", err);
+
+    return NextResponse.json(
+      { error: "Failed to fetch product" },
+      { status: 500 },
+    );
+  }
 }
