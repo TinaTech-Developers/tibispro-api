@@ -4,7 +4,7 @@ import { verifyToken } from "@/lib/jwt";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
   try {
     const auth = req.headers.get("authorization");
@@ -16,10 +16,12 @@ export async function GET(
     const token = auth.split(" ")[1];
     const decoded: any = verifyToken(token);
 
+    const { id } = await context.params; // ✅ IMPORTANT FIX
+
     const product = await prisma.product.findFirst({
       where: {
-        id: params.id,
-        organizationId: decoded.orgId, // ✅ FIXED
+        id,
+        organizationId: decoded.orgId,
       },
     });
 
@@ -33,4 +35,3 @@ export async function GET(
     );
   }
 }
- 

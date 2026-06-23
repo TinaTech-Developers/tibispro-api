@@ -1,11 +1,6 @@
 import { verifyToken } from "@/lib/jwt";
 import { prisma } from "@/lib/prisma";
-import { JwtPayload } from "jsonwebtoken";
 import { NextResponse } from "next/server";
-
-type AuthPayload = JwtPayload & {
-  organizationId: string;
-};
 
 export async function POST(req: Request) {
   try {
@@ -16,12 +11,11 @@ export async function POST(req: Request) {
     }
 
     const token = auth.split(" ")[1];
-
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const decoded = verifyToken(token) as AuthPayload;
+    const decoded = verifyToken(token) as any;
 
     if (!decoded?.organizationId) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
@@ -33,10 +27,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
+    const organizationId = decoded.organizationId; // 🔥 force extraction
+
+    console.log("ORG ID:", organizationId); // debug
+
     const movement = await prisma.stockMovement.create({
       data: {
         productId,
-        organizationId: decoded.organizationId, // ✅ FIX IS HERE
+        organizationId, // ✅ MUST be value
         type,
         quantity: Number(quantity),
         reason: reason || "",
