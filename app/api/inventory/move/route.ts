@@ -1,10 +1,12 @@
 import { verifyToken } from "@/lib/jwt";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
 import { JwtPayload } from "jsonwebtoken";
+import { NextResponse } from "next/server";
+
 type AuthPayload = JwtPayload & {
   organizationId: string;
 };
+
 export async function POST(req: Request) {
   try {
     const auth = req.headers.get("authorization");
@@ -21,19 +23,26 @@ export async function POST(req: Request) {
 
     const decoded = verifyToken(token) as AuthPayload;
 
+    if (!decoded?.organizationId) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
     const { productId, type, quantity, reason } = await req.json();
+
+    if (!productId || !type || !quantity) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
 
     const movement = await prisma.stockMovement.create({
       data: {
         productId,
-        organizationId: decoded.organizationId,
+        organizationId: decoded.organizationId, // ✅ FIX IS HERE
         type,
-        quantity,
-        reason,
+        quantity: Number(quantity),
+        reason: reason || "",
       },
     });
 
-    // update stock
     const multiplier = type === "IN" ? 1 : -1;
 
     await prisma.product.update({
