@@ -21,7 +21,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const validPassword = await bcrypt.compare(currentPassword, user.password);
+    // ✅ FIX: use passwordHash
+    const validPassword = await bcrypt.compare(
+      currentPassword,
+      user.passwordHash,
+    );
 
     if (!validPassword) {
       return NextResponse.json(
@@ -35,7 +39,7 @@ export async function POST(req: Request) {
     await prisma.user.update({
       where: { id: userId },
       data: {
-        password: hashedPassword,
+        passwordHash: hashedPassword, // ✅ FIX here too
       },
     });
 
