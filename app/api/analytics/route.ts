@@ -11,17 +11,22 @@ export async function GET(req: Request) {
     }
 
     const token = auth.split(" ")[1];
-    const decoded = verifyToken(token);
 
-    const orgId = decoded.orgId;
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    if (!orgId) {
+    const decoded: any = verifyToken(token);
+
+    if (!decoded?.orgId) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    // ================================
-    // 1. REVENUE (Payments)
-    // ================================
+    const orgId = decoded.orgId;
+
+    // ====================================
+    // REVENUE
+    // ====================================
     const revenueAgg = await prisma.payment.aggregate({
       where: {
         organizationId: orgId,
@@ -34,10 +39,10 @@ export async function GET(req: Request) {
 
     const revenue = revenueAgg._sum.amount ?? 0;
 
-    // ================================
-    // 2. EXPENSES
-    // ================================
-    const expenseAgg = await prisma.expense.aggregate({
+    // ====================================
+    // EXPENSES
+    // ====================================
+    const expensesAgg = await prisma.expense.aggregate({
       where: {
         organizationId: orgId,
       },
@@ -46,98 +51,179 @@ export async function GET(req: Request) {
       },
     });
 
-    const expenses = expenseAgg._sum.amount ?? 0;
+    const expenses = expensesAgg._sum.amount ?? 0;
 
-    // ================================
-    // 3. INVOICES
-    // ================================
-    const invoices = await prisma.invoice.groupBy({
-      by: ["status"],
-      where: { organizationId: orgId },
-      _count: {
-        _all: true,
-      },
-    });
+    const profit = revenue - expenses;
 
-    // ================================
-    // 4. CUSTOMERS
-    // ================================
-    const customersCount = await prisma.customer.count({
-      where: { organizationId: orgId },
-    });
+    // ====================================
+    // COUNTS
+    // ====================================
+    const [invoicesCount, customersCount, productsCount, pendingInvoices] =
+      await Promise.all([
+        prisma.invoice.count({
+          where: {
+            organizationId: orgId,
+          },
+        }),
 
-    // ================================
-    // 5. PRODUCTS COUNT
-    // ================================
-    const productsCount = await prisma.product.count({
-      where: { organizationId: orgId },
-    });
+        prisma.customer.count({
+          where: {
+            organizationId: orgId,
+          },
+        }),
 
-    // ================================
-    // 6. TOP PRODUCTS (by invoice items)
-    // ================================
+        prisma.product.count({
+          where: {
+            organizationId: orgId,
+          },
+        }),
+
+        prisma.invoice.count({
+          where: {
+            organizationId: orgId,
+            status: "PENDING",
+          },
+        }),
+      ]);
+
+    // ====================================
+    // TOP PRODUCTS
+    // ====================================
     const topProducts = await prisma.invoiceItem.groupBy({
       by: ["name"],
+
       where: {
         invoice: {
           organizationId: orgId,
         },
+
+        name: {
+          not: null,
+        },
       },
+
       _sum: {
         quantity: true,
       },
+
       orderBy: {
         _sum: {
           quantity: "desc",
         },
       },
+
       take: 5,
     });
 
-    // ================================
-    // 7. MONTHLY REVENUE GROWTH
-    // ================================
+    // ====================================
+    // MONTHLY GROWTH
+    // ====================================
     const monthlyRevenue = await prisma.$queryRaw<
       { month: string; total: number }[]
     >`
       SELECT
-        TO_CHAR("createdAt", 'Mon') AS month,
+        TO_CHAR(DATE_TRUNC('month', "createdAt"), 'Mon') AS month,
         SUM(amount)::float AS total
       FROM "Payment"
       WHERE "organizationId" = ${orgId}
-        AND status = 'PAID'
-      GROUP BY month, DATE_TRUNC('month', "createdAt")
-      ORDER BY DATE_TRUNC('month', "createdAt") ASC;
+      AND status = 'PAID'
+      GROUP BY DATE_TRUNC('month', "createdAt")
+      ORDER BY DATE_TRUNC('month', "createdAt")
     `;
 
-    // ================================
+    // ====================================
+    // THIS MONTH VS LAST MONTH
+    // ====================================
+    const now = new Date();
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const thisMonthRevenue = await prisma.payment.aggregate({
+      where: {
+        organizationId: orgId,
+        status: "PAID",
+        createdAt: {
+          gte: startOfMonth,
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    const lastMonthRevenue = await prisma.payment.aggregate({
+      where: {
+        organizationId: orgId,
+        status: "PAID",
+        createdAt: {
+          gte: startOfLastMonth,
+          lt: startOfMonth,
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    const currentRevenue = thisMonthRevenue._sum.amount ?? 0;
+
+    const previousRevenue = lastMonthRevenue._sum.amount ?? 0;
+
+    const growthPercent =
+      previousRevenue === 0 ?
+        currentRevenue > 0 ?
+          100
+        : 0
+      : ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+
+    // ====================================
+    // TOP PRODUCT
+    // ====================================
+    const bestProduct = topProducts[0];
+
+    // ====================================
     // RESPONSE
-    // ================================
+    // ====================================
     return NextResponse.json({
       stats: {
         revenue,
         expenses,
-        profit: revenue - expenses,
-        invoices: invoices.reduce((acc, i) => acc + i._count._all, 0),
+        profit,
+        invoices: invoicesCount,
         customers: customersCount,
         products: productsCount,
       },
 
-      invoiceBreakdown: invoices,
+      insights: {
+        growthPercent: Number(growthPercent.toFixed(1)),
 
-      topProducts: topProducts.map((p) => ({
-        name: p.name ?? "Unknown",
-        sales: p._sum.quantity ?? 0,
+        pendingInvoices,
+
+        topProduct: bestProduct?.name ?? "No sales yet",
+      },
+
+      topProducts: topProducts.map((item) => ({
+        name: item.name ?? "Unknown",
+        sales: item._sum.quantity ?? 0,
       })),
 
-      monthlyGrowth: monthlyRevenue,
+      monthlyGrowth: monthlyRevenue.map((item) => ({
+        month: item.month,
+        value: item.total,
+      })),
     });
   } catch (err) {
     console.log("ANALYTICS ERROR:", err);
 
     return NextResponse.json(
-      { error: "Failed to load analytics" },
-      { status: 500 },
+      {
+        error: "Failed to load analytics",
+      },
+      {
+        status: 500,
+      },
     );
   }
 }
