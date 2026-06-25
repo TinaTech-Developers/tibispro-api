@@ -9,13 +9,6 @@ export async function GET(
 ) {
   try {
     const { orgId } = requireOrg(req);
-
-    if (!orgId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 403 },
-      );
-    }
     const { id } = await params;
 
     const customer = await prisma.customer.findFirst({
@@ -61,20 +54,25 @@ export async function DELETE(
 ) {
   try {
     const { orgId } = requireOrg(req);
-
-    if (!orgId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 403 },
-      );
-    }
-
     const { id } = await params;
 
-    await prisma.customer.deleteMany({
+    const customer = await prisma.customer.findFirst({
       where: {
         id,
         organizationId: orgId,
+      },
+    });
+
+    if (!customer) {
+      return NextResponse.json(
+        { error: "Customer not found" },
+        { status: 404 },
+      );
+    }
+
+    await prisma.customer.delete({
+      where: {
+        id: customer.id,
       },
     });
 
@@ -105,19 +103,26 @@ export async function PATCH(
   try {
     const { orgId } = requireOrg(req);
 
-    if (!orgId) {
-      return NextResponse.json(
-        { error: "No organization found" },
-        { status: 403 },
-      );
-    }
     const { id } = await params;
     const body = await req.json();
 
-    const updated = await prisma.customer.updateMany({
+    const customer = await prisma.customer.findFirst({
       where: {
         id,
         organizationId: orgId,
+      },
+    });
+
+    if (!customer) {
+      return NextResponse.json(
+        { error: "Customer not found" },
+        { status: 404 },
+      );
+    }
+
+    const updated = await prisma.customer.update({
+      where: {
+        id: customer.id,
       },
       data: {
         name: body.name,
