@@ -59,11 +59,12 @@ export async function POST(req: Request) {
 
       hasOrganization: !!organization,
 
-      routeState: {
-        needsSetup,
-        needsSubscription,
-        isTrialActive,
+      subscriptionStatus: {
+        active: isTrialActive || organization?.plan === "PRO",
+        needsPayment: needsSubscription,
       },
+
+      needsSetup,
 
       user: {
         id: user.id,

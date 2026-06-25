@@ -1,21 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/jwt";
-
+import { getAuth } from "@/lib/auth";
 export async function POST(req: Request) {
   try {
-    const auth = req.headers.get("authorization");
-
-    if (!auth || !auth.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const token = auth.split(" ")[1];
-    const decoded: any = verifyToken(token);
+    const { userId } = getAuth(req);
 
     const body = await req.json();
-
-    console.log("BODY:", body);
 
     const {
       organizationName,
@@ -29,7 +20,6 @@ export async function POST(req: Request) {
       logoUrl,
     } = body;
 
-    console.log("EMAIL:", email);
     if (!organizationName || !currency || !country) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -37,9 +27,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get user
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: userId },
       include: { organization: true },
     });
 
@@ -107,7 +96,9 @@ export async function POST(req: Request) {
       trialDays: 14,
     });
   } catch (err: any) {
-    console.error("ORG SETUP ERROR:", err);
+    if (err.message === "UNAUTHORIZED" || err.message === "INVALID_TOKEN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     return NextResponse.json(
       {

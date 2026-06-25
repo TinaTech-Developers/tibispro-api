@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuth } from "@/lib/auth";
+import { getAuth, requireOrg } from "@/lib/auth";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { orgId } = getAuth(req);
+    const { orgId } = requireOrg(req);
 
+    if (!orgId) {
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 },
+      );
+    }
     const { id } = await params;
 
     const customer = await prisma.customer.findFirst({
@@ -31,8 +37,19 @@ export async function GET(
       data: customer,
     });
   } catch (err: any) {
+    if (err.message === "UNAUTHORIZED" || err.message === "INVALID_TOKEN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (err.message === "NO_ORGANIZATION") {
+      return NextResponse.json(
+        { error: "Organization required" },
+        { status: 403 },
+      );
+    }
+
     return NextResponse.json(
-      { success: false, error: err.message || "Failed to fetch customer" },
+      { error: "Something went wrong" },
       { status: 500 },
     );
   }
@@ -43,7 +60,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { orgId } = getAuth(req);
+    const { orgId } = requireOrg(req);
+
+    if (!orgId) {
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 },
+      );
+    }
 
     const { id } = await params;
 
@@ -55,9 +79,20 @@ export async function DELETE(
     });
 
     return NextResponse.json({ message: "Customer deleted" });
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message === "UNAUTHORIZED" || err.message === "INVALID_TOKEN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (err.message === "NO_ORGANIZATION") {
+      return NextResponse.json(
+        { error: "Organization required" },
+        { status: 403 },
+      );
+    }
+
     return NextResponse.json(
-      { error: "Failed to delete customer" },
+      { error: "Something went wrong" },
       { status: 500 },
     );
   }
@@ -68,8 +103,14 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { orgId } = getAuth(req);
+    const { orgId } = requireOrg(req);
 
+    if (!orgId) {
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 },
+      );
+    }
     const { id } = await params;
     const body = await req.json();
 
@@ -91,11 +132,19 @@ export async function PATCH(
       data: updated,
     });
   } catch (err: any) {
+    if (err.message === "UNAUTHORIZED" || err.message === "INVALID_TOKEN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (err.message === "NO_ORGANIZATION") {
+      return NextResponse.json(
+        { error: "Organization required" },
+        { status: 403 },
+      );
+    }
+
     return NextResponse.json(
-      {
-        success: false,
-        error: err.message || "Failed to update customer",
-      },
+      { error: "Something went wrong" },
       { status: 500 },
     );
   }

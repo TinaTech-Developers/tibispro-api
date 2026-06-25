@@ -20,3 +20,13 @@ export function getAuth(req: Request) {
     orgId: decoded.orgId,
   };
 }
+
+export function requireOrg(req: Request) {
+  const auth = getAuth(req);
+
+  if (!auth.orgId) {
+    throw new Error("NO_ORGANIZATION");
+  }
+
+  return auth;
+}

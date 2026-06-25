@@ -1,11 +1,17 @@
 import { getAuth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyToken } from "@/lib/jwt";
 
 export async function GET(req: Request) {
   try {
     const { orgId } = getAuth(req);
+
+    if (!orgId) {
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 },
+      );
+    }
 
     const customers = await prisma.customer.findMany({
       where: {
@@ -17,7 +23,11 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({ customers });
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message === "UNAUTHORIZED" || err.message === "INVALID_TOKEN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     return NextResponse.json(
       { error: "Failed to fetch customers" },
       { status: 500 },
@@ -28,6 +38,13 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const { orgId } = getAuth(req);
+
+    if (!orgId) {
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 403 },
+      );
+    }
 
     const { name, email, phone, address } = await req.json();
 
@@ -49,7 +66,11 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ customer });
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message === "UNAUTHORIZED" || err.message === "INVALID_TOKEN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     return NextResponse.json(
       { error: "Failed to create customer" },
       { status: 500 },
