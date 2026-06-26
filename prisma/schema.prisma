@@ -65,15 +65,30 @@ model BillingConfig {
   createdAt       DateTime @default(now())
 }
 
+
+
 model SubscriptionPayment {
-  id             String        @id @default(uuid())
-  organizationId String
-  amount         Float
-  phoneNumber    String
-  reference      String?
-  status         PaymentStatus @default(PENDING)
-  createdAt      DateTime      @default(now())
-  organization   Organization  @relation(fields: [organizationId], references: [id])
+  id              String        @id @default(uuid())
+  organizationId  String
+  amount          Float
+  currency        String        @default("USD")
+
+  phoneNumber     String
+  reference       String        @unique
+
+  provider        PaymentProvider @default(ECOCASH)
+
+  status          PaymentStatus @default(PENDING)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  processedAt     DateTime?
+  processedBy     String?       // admin user id (optional audit)
+
+  notes           String?
+
+  organization    Organization  @relation(fields: [organizationId], references: [id])
 }
 
 model Customer {
@@ -260,4 +275,10 @@ enum StockMovementType {
   IN
   OUT
   ADJUSTMENT
+}
+
+enum PaymentProvider {
+  ECOCASH
+  ONEMONEY
+  BANK
 }
