@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     const now = new Date();
 
     const trialEndsAt = new Date();
-    trialEndsAt.setTime(Date.now() + 1 * 24 * 60 * 60 * 1000);
+    trialEndsAt.setTime(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
     console.log("TRIAL ENDS:", trialEndsAt);
 
