@@ -34,3 +34,60 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Failed to load user" }, { status: 500 });
   }
 }
+
+export async function PUT(req: Request) {
+  try {
+    const { userId, orgId } = getAuth(req);
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+
+    const { name, email, businessName, phone, address, city, country } = body;
+
+    // Update user
+    const user = await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        name,
+        email,
+      },
+    });
+
+    // Update organization
+    if (orgId) {
+      await prisma.organization.update({
+        where: {
+          id: orgId,
+        },
+        data: {
+          name: businessName,
+          phone,
+          address,
+          city,
+          country,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      message: "Profile updated successfully",
+      user,
+    });
+  } catch (err) {
+    console.error(err);
+
+    return NextResponse.json(
+      {
+        error: "Failed to update profile",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+}
