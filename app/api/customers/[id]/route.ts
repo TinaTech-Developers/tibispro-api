@@ -59,11 +59,16 @@ export async function DELETE(req: NextRequest, { params }: Context) {
       );
     }
 
-    await prisma.customer.update({
+    await prisma.quotation.deleteMany({
+      where: { customerId: id },
+    });
+
+    await prisma.invoice.deleteMany({
+      where: { customerId: id },
+    });
+
+    await prisma.customer.delete({
       where: { id },
-      data: {
-        deletedAt: new Date(),
-      },
     });
     return NextResponse.json({ success: true });
   } catch (err: any) {
