@@ -3,16 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { requireOrg } from "@/lib/auth";
 
 type Context = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 export async function GET(req: NextRequest, { params }: Context) {
   try {
     const { orgId } = requireOrg(req);
+    const { id } = await params;
 
     const customer = await prisma.customer.findFirst({
       where: {
-        id: params.id,
+        id,
         organizationId: orgId,
       },
     });
@@ -24,8 +25,13 @@ export async function GET(req: NextRequest, { params }: Context) {
       );
     }
 
-    return NextResponse.json({ success: true, data: customer });
+    return NextResponse.json({
+      success: true,
+      data: customer,
+    });
   } catch (err: any) {
+    console.error(err);
+
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: 500 },
@@ -36,10 +42,11 @@ export async function GET(req: NextRequest, { params }: Context) {
 export async function DELETE(req: NextRequest, { params }: Context) {
   try {
     const { orgId } = requireOrg(req);
+    const { id } = await params;
 
     const customer = await prisma.customer.findFirst({
       where: {
-        id: params.id,
+        id,
         organizationId: orgId,
       },
     });
@@ -52,7 +59,9 @@ export async function DELETE(req: NextRequest, { params }: Context) {
     }
 
     await prisma.customer.delete({
-      where: { id: params.id },
+      where: {
+        id,
+      },
     });
 
     return NextResponse.json({ success: true });
@@ -69,11 +78,13 @@ export async function DELETE(req: NextRequest, { params }: Context) {
 export async function PATCH(req: NextRequest, { params }: Context) {
   try {
     const { orgId } = requireOrg(req);
+    const { id } = await params;
+
     const body = await req.json();
 
     const customer = await prisma.customer.findFirst({
       where: {
-        id: params.id,
+        id,
         organizationId: orgId,
       },
     });
@@ -86,7 +97,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
     }
 
     const updated = await prisma.customer.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name: body.name,
         phone: body.phone,
@@ -95,7 +106,10 @@ export async function PATCH(req: NextRequest, { params }: Context) {
       },
     });
 
-    return NextResponse.json({ success: true, data: updated });
+    return NextResponse.json({
+      success: true,
+      data: updated,
+    });
   } catch (err: any) {
     console.error("PATCH ERROR:", err);
 
