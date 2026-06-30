@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuth, requireOrg } from "@/lib/auth";
+import { requireOrg } from "@/lib/auth";
 
+/* ================= GET CUSTOMER ================= */
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -15,6 +15,9 @@ export async function GET(
       where: {
         id,
         organizationId: orgId,
+      },
+      include: {
+        invoices: true,
       },
     });
 
@@ -30,82 +33,24 @@ export async function GET(
       data: customer,
     });
   } catch (err: any) {
-    if (err.message === "UNAUTHORIZED" || err.message === "INVALID_TOKEN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (err.message === "NO_ORGANIZATION") {
-      return NextResponse.json(
-        { error: "Organization required" },
-        { status: 403 },
-      );
-    }
-
     return NextResponse.json(
-      { error: "Something went wrong" },
+      { error: "Failed to fetch customer" },
       { status: 500 },
     );
   }
 }
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { orgId } = requireOrg(req);
-    const { id } = await params;
-
-    const customer = await prisma.customer.findFirst({
-      where: {
-        id,
-        organizationId: orgId,
-      },
-    });
-
-    if (!customer) {
-      return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404 },
-      );
-    }
-
-    await prisma.customer.delete({
-      where: {
-        id: customer.id,
-      },
-    });
-
-    return NextResponse.json({ message: "Customer deleted" });
-  } catch (err: any) {
-    if (err.message === "UNAUTHORIZED" || err.message === "INVALID_TOKEN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (err.message === "NO_ORGANIZATION") {
-      return NextResponse.json(
-        { error: "Organization required" },
-        { status: 403 },
-      );
-    }
-
-    return NextResponse.json(
-      { error: "Something went wrong" },
-      { status: 500 },
-    );
-  }
-}
-
+/* ================= UPDATE CUSTOMER ================= */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { orgId } = requireOrg(req);
-
     const { id } = await params;
     const body = await req.json();
 
+    // ensure customer belongs to org
     const customer = await prisma.customer.findFirst({
       where: {
         id,
@@ -137,19 +82,44 @@ export async function PATCH(
       data: updated,
     });
   } catch (err: any) {
-    if (err.message === "UNAUTHORIZED" || err.message === "INVALID_TOKEN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    return NextResponse.json(
+      { error: "Failed to update customer" },
+      { status: 500 },
+    );
+  }
+}
 
-    if (err.message === "NO_ORGANIZATION") {
+/* ================= DELETE CUSTOMER (FIXED) ================= */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { orgId } = requireOrg(req);
+    const { id } = await params;
+
+    // SAFE delete (org protected + atomic)
+    const result = await prisma.customer.deleteMany({
+      where: {
+        id,
+        organizationId: orgId,
+      },
+    });
+
+    if (result.count === 0) {
       return NextResponse.json(
-        { error: "Organization required" },
-        { status: 403 },
+        { error: "Customer not found" },
+        { status: 404 },
       );
     }
 
+    return NextResponse.json({
+      success: true,
+      message: "Customer deleted successfully",
+    });
+  } catch (err: any) {
     return NextResponse.json(
-      { error: "Something went wrong" },
+      { error: "Failed to delete customer" },
       { status: 500 },
     );
   }
