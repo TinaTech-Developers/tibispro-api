@@ -100,6 +100,9 @@ model Customer {
   organizationId String
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+
+ deletedAt      DateTime?    // ✅ ADD THIS
+
   organization   Organization @relation(fields: [organizationId], references: [id])
   invoices       Invoice[]
   quotations     Quotation[]

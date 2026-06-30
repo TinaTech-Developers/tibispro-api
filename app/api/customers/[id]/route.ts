@@ -15,6 +15,7 @@ export async function GET(req: NextRequest, { params }: Context) {
       where: {
         id,
         organizationId: orgId,
+        deletedAt: null,
       },
     });
 
@@ -58,12 +59,12 @@ export async function DELETE(req: NextRequest, { params }: Context) {
       );
     }
 
-    await prisma.customer.delete({
-      where: {
-        id,
+    await prisma.customer.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
       },
     });
-
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error("DELETE ERROR:", err);
