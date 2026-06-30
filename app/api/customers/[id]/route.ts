@@ -90,15 +90,16 @@ export async function PATCH(
 }
 
 /* ================= DELETE CUSTOMER (FIXED) ================= */
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function DELETE(req: NextRequest, { params }: any) {
   try {
-    const { orgId } = requireOrg(req);
-    const { id } = await params;
+    console.log("DELETE HIT");
 
-    // SAFE delete (org protected + atomic)
+    const { orgId } = requireOrg(req);
+    console.log("ORG ID:", orgId);
+
+    const { id } = await params;
+    console.log("CUSTOMER ID:", id);
+
     const result = await prisma.customer.deleteMany({
       where: {
         id,
@@ -106,18 +107,12 @@ export async function DELETE(
       },
     });
 
-    if (result.count === 0) {
-      return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404 },
-      );
-    }
+    console.log("DELETE RESULT:", result);
 
-    return NextResponse.json({
-      success: true,
-      message: "Customer deleted successfully",
-    });
+    return NextResponse.json({ success: true });
   } catch (err: any) {
+    console.log("🔥 DELETE ERROR FULL:", err); // <-- IMPORTANT
+
     return NextResponse.json(
       { error: "Failed to delete customer" },
       { status: 500 },
