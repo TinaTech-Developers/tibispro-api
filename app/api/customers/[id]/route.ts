@@ -90,34 +90,32 @@ export async function PATCH(
 }
 
 /* ================= DELETE CUSTOMER (FIXED) ================= */
-export async function DELETE(req: NextRequest, { params }: any) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } },
+) {
   try {
-    console.log("🔥 DELETE HIT");
+    console.log("DELETE HIT");
 
     const { orgId } = requireOrg(req);
-    console.log("ORG:", orgId);
+    const { id } = params; // ✅ NO await
 
-    const { id } = params;
+    console.log("ORG:", orgId);
     console.log("ID:", id);
 
-    const customer = await prisma.customer.findFirst({
-      where: { id, organizationId: orgId },
+    const result = await prisma.customer.deleteMany({
+      where: {
+        id,
+        organizationId: orgId,
+      },
     });
 
-    if (!customer) {
-      return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404 },
-      );
-    }
-
-    await prisma.customer.delete({
-      where: { id },
+    return NextResponse.json({
+      success: true,
+      deleted: result.count,
     });
-
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
-    console.log("🔥 FULL DELETE ERROR:", err); // <-- THIS is what you need
+  } catch (err) {
+    console.log("🔥 FULL DELETE ERROR:", err);
 
     return NextResponse.json(
       { error: "Failed to delete customer" },
