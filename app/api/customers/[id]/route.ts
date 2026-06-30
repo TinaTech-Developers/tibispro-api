@@ -2,22 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireOrg } from "@/lib/auth";
 
-/* ================= GET CUSTOMER ================= */
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+type Context = {
+  params: { id: string };
+};
+
+export async function GET(req: NextRequest, { params }: Context) {
   try {
     const { orgId } = requireOrg(req);
-    const { id } = await params;
 
     const customer = await prisma.customer.findFirst({
       where: {
-        id,
+        id: params.id,
         organizationId: orgId,
-      },
-      include: {
-        invoices: true,
       },
     });
 
@@ -28,32 +24,56 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: customer,
-    });
+    return NextResponse.json({ success: true, data: customer });
   } catch (err: any) {
     return NextResponse.json(
-      { error: "Failed to fetch customer" },
+      { error: "Something went wrong" },
       { status: 500 },
     );
   }
 }
 
-/* ================= UPDATE CUSTOMER ================= */
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function DELETE(req: NextRequest, { params }: Context) {
   try {
     const { orgId } = requireOrg(req);
-    const { id } = await params;
-    const body = await req.json();
 
-    // ensure customer belongs to org
     const customer = await prisma.customer.findFirst({
       where: {
-        id,
+        id: params.id,
+        organizationId: orgId,
+      },
+    });
+
+    if (!customer) {
+      return NextResponse.json(
+        { error: "Customer not found" },
+        { status: 404 },
+      );
+    }
+
+    await prisma.customer.delete({
+      where: { id: params.id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error("DELETE ERROR:", err);
+
+    return NextResponse.json(
+      { error: "Failed to delete customer" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PATCH(req: NextRequest, { params }: Context) {
+  try {
+    const { orgId } = requireOrg(req);
+    const body = await req.json();
+
+    const customer = await prisma.customer.findFirst({
+      where: {
+        id: params.id,
         organizationId: orgId,
       },
     });
@@ -66,9 +86,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.customer.update({
-      where: {
-        id: customer.id,
-      },
+      where: { id: params.id },
       data: {
         name: body.name,
         phone: body.phone,
@@ -77,48 +95,12 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: updated,
-    });
+    return NextResponse.json({ success: true, data: updated });
   } catch (err: any) {
+    console.error("PATCH ERROR:", err);
+
     return NextResponse.json(
       { error: "Failed to update customer" },
-      { status: 500 },
-    );
-  }
-}
-
-/* ================= DELETE CUSTOMER (FIXED) ================= */
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } },
-) {
-  try {
-    console.log("DELETE HIT");
-
-    const { orgId } = requireOrg(req);
-    const { id } = params; // ✅ NO await
-
-    console.log("ORG:", orgId);
-    console.log("ID:", id);
-
-    const result = await prisma.customer.deleteMany({
-      where: {
-        id,
-        organizationId: orgId,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      deleted: result.count,
-    });
-  } catch (err) {
-    console.log("🔥 FULL DELETE ERROR:", err);
-
-    return NextResponse.json(
-      { error: "Failed to delete customer" },
       { status: 500 },
     );
   }
