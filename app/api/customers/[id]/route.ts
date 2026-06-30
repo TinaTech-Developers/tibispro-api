@@ -45,11 +45,9 @@ export async function DELETE(req: NextRequest, { params }: Context) {
     const { orgId } = requireOrg(req);
     const { id } = await params;
 
+    // 1. Check customer exists
     const customer = await prisma.customer.findFirst({
-      where: {
-        id,
-        organizationId: orgId,
-      },
+      where: { id, organizationId: orgId },
     });
 
     if (!customer) {
@@ -59,68 +57,51 @@ export async function DELETE(req: NextRequest, { params }: Context) {
       );
     }
 
-    await prisma.quotation.deleteMany({
+    // 2. Delete dependent data FIRST
+
+    // delete invoice items + payments via invoices
+    const invoices = await prisma.invoice.findMany({
       where: { customerId: id },
+      select: { id: true },
     });
 
-    await prisma.invoice.deleteMany({
+    for (const invoice of invoices) {
+      await prisma.payment.deleteMany({
+        where: { invoiceId: invoice.id },
+      });
+
+      await prisma.invoice.delete({
+        where: { id: invoice.id },
+      });
+    }
+
+    // delete quotations + items
+    const quotations = await prisma.quotation.findMany({
       where: { customerId: id },
+      select: { id: true },
     });
 
+    for (const q of quotations) {
+      await prisma.quotationItem.deleteMany({
+        where: { quotationId: q.id },
+      });
+
+      await prisma.quotation.delete({
+        where: { id: q.id },
+      });
+    }
+
+    // 3. Finally delete customer
     await prisma.customer.delete({
       where: { id },
     });
+
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    console.error("DELETE ERROR:", err);
+    console.error("DELETE CUSTOMER ERROR:", err);
 
     return NextResponse.json(
       { error: "Failed to delete customer" },
-      { status: 500 },
-    );
-  }
-}
-
-export async function PATCH(req: NextRequest, { params }: Context) {
-  try {
-    const { orgId } = requireOrg(req);
-    const { id } = await params;
-
-    const body = await req.json();
-
-    const customer = await prisma.customer.findFirst({
-      where: {
-        id,
-        organizationId: orgId,
-      },
-    });
-
-    if (!customer) {
-      return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404 },
-      );
-    }
-
-    const updated = await prisma.customer.update({
-      where: { id },
-      data: {
-        name: body.name,
-        phone: body.phone,
-        email: body.email,
-        address: body.address,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: updated,
-    });
-  } catch (err: any) {
-    console.error("PATCH ERROR:", err);
-
-    return NextResponse.json(
-      { error: "Failed to update customer" },
       { status: 500 },
     );
   }
