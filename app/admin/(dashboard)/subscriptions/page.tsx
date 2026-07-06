@@ -41,12 +41,18 @@ export default function PaymentsPage() {
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
-
   const fetchPayments = async () => {
     try {
-      setLoading(true);
+      const token = localStorage.getItem("admin_token");
+
+      if (!token) {
+        console.warn("No token found");
+        return;
+      }
 
       console.log("TOKEN:", token);
+
+      setLoading(true);
 
       const res = await fetch("/api/admin/subscription-payments", {
         headers: {
@@ -61,8 +67,7 @@ export default function PaymentsPage() {
 
       setPayments(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error(err);
-      setPayments([]);
+      console.error("FETCH ERROR:", err);
     } finally {
       setLoading(false);
     }
