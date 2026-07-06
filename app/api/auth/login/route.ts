@@ -36,6 +36,29 @@ export async function POST(req: Request) {
         { status: 401 },
       );
     }
+    if (user.role === "SUPER_ADMIN") {
+      const token = signToken({
+        userId: user.id,
+        role: user.role,
+        orgId: null, // important
+      });
+
+      return NextResponse.json({
+        token,
+
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+
+        // 🚨 super admin does NOT need SaaS logic
+        hasOrganization: false,
+        subscriptionStatus: null,
+        needsSetup: false,
+      });
+    }
 
     const organization = user.organization;
 
@@ -52,6 +75,7 @@ export async function POST(req: Request) {
 
     const token = signToken({
       userId: user.id,
+      role: user.role,
       orgId: user.organizationId,
     });
     return NextResponse.json({

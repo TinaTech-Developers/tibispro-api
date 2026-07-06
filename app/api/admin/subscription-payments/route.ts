@@ -1,5 +1,3 @@
-// app/api/admin/subscription-payments/route.ts
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuth } from "@/lib/auth";
@@ -9,6 +7,15 @@ export async function GET(req: Request) {
     const { userId } = getAuth(req);
 
     if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    // 🔥 fetch actual user (because role is in DB, not auth)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -22,7 +29,12 @@ export async function GET(req: Request) {
       include: {
         organization: {
           select: {
+            id: true,
             name: true,
+            email: true,
+            phone: true,
+            plan: true,
+            status: true,
           },
         },
       },
@@ -31,18 +43,7 @@ export async function GET(req: Request) {
       },
     });
 
-    // 🔥 FLATTEN DATA FOR FRONTEND
-    const formatted = payments.map((p) => ({
-      id: p.id,
-      businessName: p.organization?.name ?? "Unknown",
-      phoneNumber: p.phoneNumber,
-      reference: p.reference,
-      amount: p.amount,
-      status: p.status,
-      createdAt: p.createdAt,
-    }));
-
-    return NextResponse.json(formatted);
+    return NextResponse.json(payments);
   } catch (err) {
     console.error(err);
     return NextResponse.json(

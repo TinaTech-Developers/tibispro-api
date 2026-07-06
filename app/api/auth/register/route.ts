@@ -38,7 +38,8 @@ export async function POST(req: Request) {
     // ✅ CREATE TOKEN (IMPORTANT FIX)
     const token = signToken({
       userId: user.id,
-      orgId: null, // no organization yet
+      role: user.role,
+      orgId: user.organizationId,
     });
 
     return NextResponse.json({

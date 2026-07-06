@@ -1,6 +1,13 @@
+import { Role } from "@prisma/client";
 import { verifyToken } from "@/lib/jwt";
 
-export function getAuth(req: Request) {
+export type AuthPayload = {
+  userId: string;
+  orgId?: string;
+  role?: Role;
+};
+
+export function getAuth(req: Request): AuthPayload {
   const authHeader = req.headers.get("authorization");
 
   if (!authHeader) {
@@ -18,14 +25,33 @@ export function getAuth(req: Request) {
   return {
     userId: decoded.userId,
     orgId: decoded.orgId,
+    role: decoded.role,
   };
 }
 
-export function requireOrg(req: Request) {
+export function requireOrg(req: Request): {
+  userId: string;
+  orgId: string;
+  role?: Role;
+} {
   const auth = getAuth(req);
 
   if (!auth.orgId) {
     throw new Error("NO_ORGANIZATION");
+  }
+
+  return {
+    userId: auth.userId,
+    orgId: auth.orgId,
+    role: auth.role,
+  };
+}
+
+export function verifyAdmin(req: Request) {
+  const auth = requireOrg(req);
+
+  if (auth.role !== Role.ADMIN && auth.role !== Role.SUPER_ADMIN) {
+    throw new Error("FORBIDDEN");
   }
 
   return auth;

@@ -1,7 +1,8 @@
-// lib/types/auth.ts
+export type AuthRole = "SUPER_ADMIN" | "ADMIN" | "STAFF";
+
 export type AuthToken = {
   userId: string;
-  orgId: string;
+  role: AuthRole;
+  orgId: string | null;
   email?: string;
-  role?: string;
 };

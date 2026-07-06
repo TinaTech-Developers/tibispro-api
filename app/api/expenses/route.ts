@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyToken } from "@/lib/jwt";
-import { getAuth } from "@/lib/auth";
+import { requireOrg } from "@/lib/auth";
+
 export async function POST(req: Request) {
   try {
-    const { orgId } = getAuth(req);
+    const { orgId } = requireOrg(req);
 
     const { title, amount, category, notes } = await req.json();
 
-    if (!title || !amount || !category || !notes) {
+    if (!title || amount === undefined || !category) {
       return NextResponse.json(
-        { error: "Title and amount are required" },
+        { error: "Title, amount and category are required." },
         { status: 400 },
       );
     }
@@ -27,9 +27,11 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ expense });
-  } catch (err) {
+  } catch (err: any) {
     return NextResponse.json(
-      { error: "Failed to create expense" },
+      {
+        error: err.message || "Failed to create expense",
+      },
       { status: 500 },
     );
   }
@@ -37,7 +39,8 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
-    const { orgId } = getAuth(req);
+    const { orgId } = requireOrg(req);
+
     const expenses = await prisma.expense.findMany({
       where: {
         organizationId: orgId,
@@ -48,9 +51,11 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({ expenses });
-  } catch (err) {
+  } catch (err: any) {
     return NextResponse.json(
-      { error: "Failed to fetch expenses" },
+      {
+        error: err.message || "Failed to fetch expenses",
+      },
       { status: 500 },
     );
   }

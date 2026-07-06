@@ -45,6 +45,8 @@ model User {
   createdAt      DateTime      @default(now())
   organization   Organization? @relation(fields: [organizationId], references: [id])
 
+ 
+
   passwordResetTokens PasswordResetToken[]
 }
 
@@ -230,6 +232,7 @@ model File {
 }
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
   STAFF
 }

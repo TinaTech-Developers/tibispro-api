@@ -1,18 +1,30 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuth } from "@/lib/auth";
+import { PaymentStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
     const { orgId } = getAuth(req);
 
-    const body = await req.json();
-    const { phoneNumber, reference, amount } = body;
+    // Ensure orgId exists
+    if (!orgId) {
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 401 },
+      );
+    }
+
+    const { phoneNumber, reference, amount } = await req.json();
 
     if (!phoneNumber || !reference) {
       return NextResponse.json(
-        { error: "Phone number and reference are required" },
-        { status: 400 },
+        {
+          error: "Phone number and reference are required",
+        },
+        {
+          status: 400,
+        },
       );
     }
 
@@ -21,12 +33,13 @@ export async function POST(req: Request) {
         organizationId: orgId,
         phoneNumber,
         reference,
-        amount: amount ?? 5,
-        status: "PENDING",
+        amount: Number(amount ?? 5),
+        status: PaymentStatus.PENDING,
       },
     });
 
     return NextResponse.json({
+      success: true,
       message: "Payment submitted successfully",
       payment,
     });
@@ -34,8 +47,12 @@ export async function POST(req: Request) {
     console.error("SUB PAY ERROR:", err);
 
     return NextResponse.json(
-      { error: "Failed to submit payment" },
-      { status: 500 },
+      {
+        error: err.message || "Failed to submit payment",
+      },
+      {
+        status: 500,
+      },
     );
   }
 }
