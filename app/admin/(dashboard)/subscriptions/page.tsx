@@ -54,11 +54,14 @@ export default function PaymentsPage() {
 
       setLoading(true);
 
-      const res = await fetch("/api/admin/subscription-payments", {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/subscription-payments`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       console.log("STATUS:", res.status);
 
