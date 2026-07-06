@@ -24,7 +24,7 @@ export default function OrganizationsPage() {
   const [search, setSearch] = useState("");
 
   const token =
-    typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const fetchOrgs = async () => {
     setLoading(true);

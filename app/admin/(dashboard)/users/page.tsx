@@ -73,7 +73,7 @@ export default function UsersModule() {
   const limit = 10;
 
   const token =
-    typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   useEffect(() => {
     if (!orgId) return; // ✅ FIXED

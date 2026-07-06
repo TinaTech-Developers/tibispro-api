@@ -40,10 +40,10 @@ export default function PaymentsPage() {
   const [statusFilter, setStatusFilter] = useState<Status | "ALL">("ALL");
 
   const token =
-    typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const fetchPayments = async () => {
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = localStorage.getItem("token");
 
       if (!token) {
         console.warn("No token found");

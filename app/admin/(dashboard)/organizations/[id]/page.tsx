@@ -192,7 +192,7 @@ export default function OrganizationDetailsPage() {
   const [actionLoading, setActionLoading] = useState(false);
 
   const token =
-    typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   useEffect(() => {
     const load = async () => {
