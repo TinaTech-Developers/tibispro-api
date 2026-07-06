@@ -4,28 +4,40 @@ import { getAuth } from "@/lib/auth";
 
 export async function GET(req: Request) {
   try {
-    const { userId } = getAuth(req);
+    const auth = getAuth(req);
 
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (!auth.userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 🔥 fetch actual user (because role is in DB, not auth)
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: {
+        id: auth.userId,
+      },
+      select: {
+        id: true,
+        role: true,
+      },
     });
 
-    if (!user || (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
 
     const payments = await prisma.subscriptionPayment.findMany({
-      where: {
-        ...(status ? { status: status as any } : {}),
-      },
+      where:
+        status ?
+          {
+            status: status as any,
+          }
+        : undefined,
       include: {
         organization: {
           select: {
@@ -44,11 +56,18 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json(payments);
-  } catch (err) {
+  } catch (err: any) {
+    console.error("===== SUBSCRIPTION PAYMENTS ERROR =====");
     console.error(err);
+
     return NextResponse.json(
-      { error: "Failed to fetch payments" },
-      { status: 500 },
+      {
+        error: err?.message ?? "Unknown error",
+        stack: process.env.NODE_ENV === "development" ? err?.stack : undefined,
+      },
+      {
+        status: 500,
+      },
     );
   }
 }

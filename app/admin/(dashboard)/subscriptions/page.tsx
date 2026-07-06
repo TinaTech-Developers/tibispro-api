@@ -46,11 +46,19 @@ export default function PaymentsPage() {
     try {
       setLoading(true);
 
+      console.log("TOKEN:", token);
+
       const res = await fetch("/api/admin/subscription-payments", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
+      console.log("STATUS:", res.status);
+
       const data = await res.json();
+      console.log("DATA:", data);
+
       setPayments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
