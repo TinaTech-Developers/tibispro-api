@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -9,23 +10,80 @@ import {
 } from "recharts";
 
 export default function DashboardPage() {
-  const revenueData = [
-    { month: "Jan", revenue: 1800 },
-    { month: "Feb", revenue: 2100 },
-    { month: "Mar", revenue: 1950 },
-    { month: "Apr", revenue: 2400 },
-    { month: "May", revenue: 2600 },
-    { month: "Jun", revenue: 2640 },
-  ];
+  const [dashboard, setDashboard] = useState<any>(null);
+
+  const [loading, setLoading] = useState(true);
+
+  const revenueData = dashboard?.revenueTrend || [];
+
+  useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await fetch("/api/admin/dashboard", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+
+        console.log("Dashboard:", data);
+
+        setDashboard(data);
+      } catch (error) {
+        console.error("Dashboard error", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchDashboard();
+  }, []);
+
+  if (loading) {
+    return <div className="p-10 text-slate-100">Loading dashboard...</div>;
+  }
+
+  if (!dashboard) {
+    return (
+      <div className="p-10 text-red-400">Failed to load dashboard data</div>
+    );
+  }
+
   return (
     <div className="space-y-6 text-slate-100">
       {/* KPI ROW */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Revenue", value: "$2,640", change: "+18%", up: true },
-          { label: "Payments", value: "142", change: "+6%", up: true },
-          { label: "Pending", value: "12", change: "-3%", up: false },
-          { label: "Organizations", value: "48", change: "+2%", up: true },
+          {
+            label: "Revenue",
+            value: `$${dashboard.kpi.revenue}`,
+            change: "+18%",
+            up: true,
+          },
+
+          {
+            label: "Payments",
+            value: dashboard.kpi.payments,
+            change: "+6%",
+            up: true,
+          },
+
+          {
+            label: "Pending",
+            value: dashboard.kpi.pending,
+            change: "-3%",
+            up: false,
+          },
+
+          {
+            label: "Organizations",
+            value: dashboard.kpi.organizations,
+            change: "+2%",
+            up: true,
+          },
         ].map((kpi) => (
           <div
             key={kpi.label}
@@ -58,13 +116,13 @@ export default function DashboardPage() {
 
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={revenueData}>
+                <LineChart data={dashboard.organizationGrowth}>
                   <CartesianGrid stroke="#334155" strokeDasharray="3 3" />
                   <XAxis dataKey="month" stroke="#94a3b8" />
                   <Tooltip />
                   <Line
                     type="monotone"
-                    dataKey="revenue"
+                    dataKey="organizations"
                     stroke="#3b82f6"
                     strokeWidth={3}
                   />
@@ -128,16 +186,31 @@ export default function DashboardPage() {
 
             <div className="space-y-3 text-sm">
               {[
-                { name: "API", status: "Healthy", color: "text-green-400" },
+                {
+                  name: "API",
+                  status: dashboard.systemHealth.api,
+                  color:
+                    dashboard.systemHealth.api === "Healthy" ?
+                      "text-green-400"
+                    : "text-red-400",
+                },
+
                 {
                   name: "Database",
-                  status: "Healthy",
-                  color: "text-green-400",
+                  status: dashboard.systemHealth.database,
+                  color:
+                    dashboard.systemHealth.database === "Healthy" ?
+                      "text-green-400"
+                    : "text-red-400",
                 },
+
                 {
                   name: "Payments",
-                  status: "Delayed",
-                  color: "text-yellow-400",
+                  status: dashboard.systemHealth.payments,
+                  color:
+                    dashboard.systemHealth.payments === "Healthy" ?
+                      "text-green-400"
+                    : "text-red-400",
                 },
               ].map((s) => (
                 <div key={s.name} className="flex justify-between">
@@ -173,17 +246,23 @@ export default function DashboardPage() {
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-400">Active Users</span>
-                <span className="font-semibold">1,204</span>
+                <span className="font-semibold">
+                  {dashboard.quickStats.activeUsers}
+                </span>
               </div>
 
               <div className="flex justify-between">
                 <span className="text-slate-400">Subscriptions</span>
-                <span className="font-semibold text-green-400">96 PRO</span>
+                <span className="font-semibold text-green-400">
+                  {dashboard.quickStats.subscriptions}
+                </span>
               </div>
 
               <div className="flex justify-between">
                 <span className="text-slate-400">Trials</span>
-                <span className="font-semibold">17</span>
+                <span className="font-semibold">
+                  {dashboard.quickStats.trials}
+                </span>
               </div>
             </div>
           </div>

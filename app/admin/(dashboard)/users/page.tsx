@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
 
 // ================= TYPES =================
 
@@ -55,8 +54,6 @@ function Badge({
 // ================= MAIN =================
 
 export default function UsersModule() {
-  const { id: orgId } = useParams();
-
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -76,53 +73,59 @@ export default function UsersModule() {
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   useEffect(() => {
-    if (!orgId) return; // ✅ FIXED
+    if (!token) return;
 
     fetchUsers();
-  }, [orgId, page, roleFilter, statusFilter]);
+  }, [page, roleFilter, statusFilter, search]);
 
   // ================= FETCH USERS =================
 
   const fetchUsers = async () => {
-    if (!orgId) return;
+    if (!token) return;
 
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const query = new URLSearchParams({
-      page: String(page),
-      limit: String(limit),
-      search,
-      role: roleFilter,
-      status: statusFilter,
-    });
+      const query = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        search,
+        role: roleFilter,
+        status: statusFilter,
+      });
 
-    const res = await fetch(
-      `/api/admin/organizations/${orgId}/users?${query}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    );
+      const res = await fetch(`/api/admin/users?${query.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    const data: ApiResponse = await res.json();
+      console.log("STATUS:", res.status);
 
-    setUsers(data.users || []);
-    setTotal(data.total || 0);
-    setLoading(false);
+      if (!res.ok) {
+        const error = await res.json();
+        console.error("API ERROR:", error);
+        return;
+      }
+
+      const data: ApiResponse = await res.json();
+
+      console.log("USERS:", data);
+
+      setUsers(data.users ?? []);
+      setTotal(data.total ?? 0);
+    } catch (error) {
+      console.error("FETCH ERROR:", error);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  useEffect(() => {
-    if (orgId) fetchUsers();
-  }, [orgId, page, roleFilter, statusFilter]);
 
   // debounce search
   const setSearchDebounced = useMemo(
     () => debounce((val: string) => setSearch(val), 400),
     [],
   );
-
-  useEffect(() => {
-    fetchUsers();
-  }, [search]);
 
   // ================= BULK =================
 
@@ -189,7 +192,7 @@ export default function UsersModule() {
     <div className="space-y-4 text-white mt-10">
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Users</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Users</h2>
 
         <button
           onClick={() => setInviteOpen(true)}
