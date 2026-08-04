@@ -18,12 +18,21 @@ model Organization {
   city                 String?
   country              String?
   logoUrl              String?
+
   plan                 Plan                  @default(FREE)
   status               OrgStatus             @default(ACTIVE)
+
   isSetupComplete      Boolean               @default(false)
+
+  // Free trial expiry
   trialEndsAt          DateTime?
+
+  // Paid subscription expiry
+  subscriptionEndsAt   DateTime?
+
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
+
   customers            Customer[]
   expenses             Expense[]
   files                File[]
