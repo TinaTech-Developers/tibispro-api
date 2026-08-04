@@ -72,10 +72,10 @@ export default function ResetPasswordForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 m-8">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 m">
         {/* Header */}
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-slate-900">Reset Password</h2>
+          <h2 className="text-xl font-bold text-slate-900">Reset Password</h2>
 
           <p className="text-sm text-slate-500 mt-2">
             Enter your new password below
