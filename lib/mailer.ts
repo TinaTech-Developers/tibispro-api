@@ -14,6 +14,9 @@ export const sendResetEmail = async (
 
   await transporter.verify();
 
+  console.log("EMAIL TO:", to);
+  console.log("RESET LINK SENT:", resetLink);
+
   await transporter.sendMail({
     from: `"TiBizPro" <tibizpro.app@gmail.com>`,
     to,

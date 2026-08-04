@@ -31,8 +31,14 @@ export async function POST(req: Request) {
     },
   });
 
-  // Replace with your real frontend/backend URL
+  console.log("================================");
+  console.log("APP_URL:", process.env.APP_URL);
+  console.log("TOKEN:", token);
+
   const resetLink = `${process.env.APP_URL}/reset-password?token=${token}`;
+
+  console.log("RESET LINK:", resetLink);
+  console.log("================================");
 
   await sendResetEmail(user.email, resetLink);
 
