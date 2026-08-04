@@ -21,6 +21,8 @@ export async function POST(req: Request) {
       },
     });
 
+    console.log("LOGIN EMAIL:", email);
+    console.log("USER FOUND:", user);
     if (!user) {
       return NextResponse.json(
         { error: "Invalid credentials" },
@@ -29,6 +31,7 @@ export async function POST(req: Request) {
     }
 
     const validPassword = await bcrypt.compare(password, user.passwordHash);
+    console.log("PASSWORD MATCH:", validPassword);
 
     if (!validPassword) {
       return NextResponse.json(
