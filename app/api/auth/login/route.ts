@@ -5,45 +5,72 @@ import { signToken } from "@/lib/jwt";
 
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const body = await req.json();
+
+    const email = body.email?.trim().toLowerCase();
+    const password = body.password?.trim();
+
+    console.log("LOGIN ATTEMPT");
+    console.log("EMAIL:", email);
+    console.log("PASSWORD LENGTH:", password?.length);
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Email and password are required" },
-        { status: 400 },
+        {
+          error: "Email and password are required",
+        },
+        {
+          status: 400,
+        },
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
+    const user = await prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: "insensitive",
+        },
+      },
       include: {
-        organization: true, // ✅ FIX: removed subscriptions
+        organization: true,
       },
     });
 
-    console.log("LOGIN EMAIL:", email);
-    console.log("USER FOUND:", user);
+    console.log("USER FOUND:", user?.email);
+
     if (!user) {
       return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 },
+        {
+          error: "Invalid credentials",
+        },
+        {
+          status: 401,
+        },
       );
     }
 
     const validPassword = await bcrypt.compare(password, user.passwordHash);
+
     console.log("PASSWORD MATCH:", validPassword);
 
     if (!validPassword) {
       return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 },
+        {
+          error: "Invalid credentials",
+        },
+        {
+          status: 401,
+        },
       );
     }
+
+    // SUPER ADMIN LOGIN
     if (user.role === "SUPER_ADMIN") {
       const token = signToken({
         userId: user.id,
         role: user.role,
-        orgId: null, // important
+        orgId: null,
       });
 
       return NextResponse.json({
@@ -56,7 +83,6 @@ export async function POST(req: Request) {
           role: user.role,
         },
 
-        // 🚨 super admin does NOT need SaaS logic
         hasOrganization: false,
         subscriptionStatus: null,
         needsSetup: false,
@@ -65,22 +91,23 @@ export async function POST(req: Request) {
 
     const organization = user.organization;
 
-    // 🧠 TRIAL LOGIC (based on your schema)
     const isTrialActive =
       !!organization?.trialEndsAt &&
       new Date(organization.trialEndsAt) > new Date();
 
     const needsSetup = !organization?.isSetupComplete;
 
-    // 💡 Subscription logic now depends on PLAN ONLY
     const needsSubscription =
-      organization && !isTrialActive && organization.plan !== "PRO";
+      !!organization && !isTrialActive && organization.plan !== "PRO";
 
     const token = signToken({
       userId: user.id,
+
       role: user.role,
+
       orgId: user.organizationId,
     });
+
     return NextResponse.json({
       token,
 
@@ -88,6 +115,7 @@ export async function POST(req: Request) {
 
       subscriptionStatus: {
         active: isTrialActive || organization?.plan === "PRO",
+
         needsPayment: needsSubscription,
       },
 
@@ -95,16 +123,24 @@ export async function POST(req: Request) {
 
       user: {
         id: user.id,
+
         name: user.name,
+
         email: user.email,
+
         role: user.role,
+
         organization:
           organization ?
             {
               id: organization.id,
+
               name: organization.name,
+
               isSetupComplete: organization.isSetupComplete,
+
               plan: organization.plan,
+
               trialEndsAt: organization.trialEndsAt,
             }
           : null,
@@ -118,7 +154,10 @@ export async function POST(req: Request) {
         error: "Server error",
         details: err instanceof Error ? err.message : String(err),
       },
-      { status: 500 },
+
+      {
+        status: 500,
+      },
     );
   }
 }
