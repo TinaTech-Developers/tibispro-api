@@ -71,75 +71,107 @@ export default function ResetPasswordForm() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "#0f172a",
-      }}
-    >
-      <div
-        style={{
-          width: 420,
-          background: "#fff",
-          padding: 30,
-          borderRadius: 12,
-        }}
-      >
-        <h2>Reset Password</h2>
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 m-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-slate-900">Reset Password</h2>
 
-        <input
-          type="password"
-          placeholder="New Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{
-            width: "100%",
-            padding: 12,
-            marginTop: 20,
-            marginBottom: 15,
-          }}
-        />
+          <p className="text-sm text-slate-500 mt-2">
+            Enter your new password below
+          </p>
+        </div>
 
-        <input
-          type="password"
-          placeholder="Confirm Password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          style={{
-            width: "100%",
-            padding: 12,
-            marginBottom: 20,
-          }}
-        />
+        {/* New Password */}
+        <div className="mb-5">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            New Password
+          </label>
 
+          <input
+            type="password"
+            placeholder="Enter new password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="
+              w-full
+              px-4
+              py-3
+              rounded-xl
+              border
+              border-slate-300
+              outline-none
+              focus:ring-2
+              focus:ring-blue-500
+              focus:border-blue-500
+              transition
+              text-slate-900
+            "
+          />
+        </div>
+
+        {/* Confirm Password */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Confirm Password
+          </label>
+
+          <input
+            type="password"
+            placeholder="Confirm new password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="
+              w-full
+              px-4
+              py-3
+              rounded-xl
+              border
+              border-slate-300
+              outline-none
+              focus:ring-2
+              focus:ring-blue-500
+              focus:border-blue-500
+              transition
+              text-slate-900
+            "
+          />
+        </div>
+
+        {/* Button */}
         <button
           onClick={handleReset}
           disabled={loading}
-          style={{
-            width: "100%",
-            padding: 14,
-            background: "#2563eb",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            cursor: "pointer",
-          }}
+          className="
+            w-full
+            py-3
+            rounded-xl
+            bg-blue-600
+            hover:bg-blue-700
+            disabled:bg-blue-400
+            text-white
+            font-semibold
+            transition
+            shadow-lg
+            shadow-blue-600/30
+          "
         >
           {loading ? "Resetting..." : "Reset Password"}
         </button>
 
+        {/* Message */}
         {message && (
-          <p
-            style={{
-              marginTop: 20,
-              color: message.includes("success") ? "green" : "red",
-            }}
+          <div
+            className={`
+              mt-6
+              text-center
+              text-sm
+              font-medium
+              ${message.includes("success") ? "text-green-600" : "text-red-600"}
+            `}
           >
             {message}
-          </p>
+          </div>
         )}
       </div>
     </div>
