@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     const token = body.token?.trim();
-    const password = body.password?.trim();
+    const password = body.password;
 
     console.log("RESET REQUEST RECEIVED");
     console.log("TOKEN:", token);

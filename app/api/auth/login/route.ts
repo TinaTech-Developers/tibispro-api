@@ -5,16 +5,16 @@ import { signToken } from "@/lib/jwt";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const { email, password } = await req.json();
 
-    const email = body.email?.trim().toLowerCase();
-    const password = body.password?.trim();
+    const cleanEmail = email?.trim().toLowerCase();
 
     console.log("LOGIN ATTEMPT");
-    console.log("EMAIL:", email);
+    console.log("EMAIL:", cleanEmail);
+    console.log("PASSWORD RAW:", JSON.stringify(password));
     console.log("PASSWORD LENGTH:", password?.length);
 
-    if (!email || !password) {
+    if (!cleanEmail || !password) {
       return NextResponse.json(
         {
           error: "Email and password are required",
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     const user = await prisma.user.findFirst({
       where: {
         email: {
-          equals: email,
+          equals: cleanEmail,
           mode: "insensitive",
         },
       },
@@ -50,6 +50,8 @@ export async function POST(req: Request) {
       );
     }
 
+    console.log("DATABASE HASH:", user.passwordHash);
+
     const validPassword = await bcrypt.compare(password, user.passwordHash);
 
     console.log("PASSWORD MATCH:", validPassword);
@@ -65,30 +67,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // SUPER ADMIN LOGIN
-    if (user.role === "SUPER_ADMIN") {
-      const token = signToken({
-        userId: user.id,
-        role: user.role,
-        orgId: null,
-      });
-
-      return NextResponse.json({
-        token,
-
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
-
-        hasOrganization: false,
-        subscriptionStatus: null,
-        needsSetup: false,
-      });
-    }
-
     const organization = user.organization;
 
     const isTrialActive =
@@ -102,9 +80,7 @@ export async function POST(req: Request) {
 
     const token = signToken({
       userId: user.id,
-
       role: user.role,
-
       orgId: user.organizationId,
     });
 
@@ -123,38 +99,29 @@ export async function POST(req: Request) {
 
       user: {
         id: user.id,
-
         name: user.name,
-
         email: user.email,
-
         role: user.role,
 
         organization:
           organization ?
             {
               id: organization.id,
-
               name: organization.name,
-
-              isSetupComplete: organization.isSetupComplete,
-
               plan: organization.plan,
-
+              isSetupComplete: organization.isSetupComplete,
               trialEndsAt: organization.trialEndsAt,
             }
           : null,
       },
     });
-  } catch (err) {
-    console.error("LOGIN ERROR:", err);
+  } catch (error) {
+    console.error("LOGIN ERROR:", error);
 
     return NextResponse.json(
       {
         error: "Server error",
-        details: err instanceof Error ? err.message : String(err),
       },
-
       {
         status: 500,
       },
